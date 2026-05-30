@@ -1,1 +1,10 @@
 email-validator>=2.0.0
+fastapi
+uvicorn[standard]
+sqlalchemy[asyncio]
+asyncpg
+pydantic[email]
+python-jose[cryptography]
+passlib[bcrypt]
+python-dotenv
+websockets
