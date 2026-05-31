@@ -1,13 +1,15 @@
 # backend/routers/homework.py
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from typing import List
 
 from ..database import get_db
-from ..models import Homework, Lesson, TutorStudentRelation, User, Role
+from ..models import Homework, HomeworkStatus, Lesson, TutorStudentRelation, User, Role
 from ..schemas import HomeworkCreate, HomeworkUpdate, HomeworkOut
 from ..security import get_current_user
+from ..audit import log_action
+from ..push import send_push
 
 router = APIRouter(prefix="/homework", tags=["homework"])
 
@@ -45,6 +47,7 @@ async def get_assigned_homework(
 
 @router.post("/", response_model=HomeworkOut, status_code=status.HTTP_201_CREATED)
 async def create_homework(
+    request: Request,
     data: HomeworkCreate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -59,15 +62,35 @@ async def create_homework(
     if lesson.tutor_id != current_user.id:
         raise HTTPException(status_code=403, detail="Это занятие принадлежит другому репетитору")
 
-    hw = Homework(**data.model_dump())
+    hw = Homework(**data.model_dump(), status=HomeworkStatus.assigned)
     db.add(hw)
+    await db.flush()
+    await log_action(db, user_id=current_user.id, action="CREATE",
+                     entity_type="homework", entity_id=hw.id,
+                     new_value=data.model_dump(mode="json"),
+                     ip_address=request.client.host if request.client else None)
     await db.commit()
     await db.refresh(hw)
+
+    # уведомление ученику
+    lesson_res = await db.execute(select(Lesson).where(Lesson.id == hw.lesson_id))
+    lesson = lesson_res.scalar_one_or_none()
+    if lesson:
+        await send_push(
+            user_id=lesson.student_id,
+            title="Новое задание",
+            body=hw.description[:80],
+            url="/homework",
+            tag="homework-new",
+            db=db,
+        )
+
     return hw
 
 
 @router.put("/{homework_id}", response_model=HomeworkOut)
 async def update_homework(
+    request: Request,
     homework_id: int,
     data: HomeworkUpdate,
     db: AsyncSession = Depends(get_db),
@@ -82,8 +105,13 @@ async def update_homework(
     if lesson.tutor_id != current_user.id:
         raise HTTPException(status_code=403, detail="Нет доступа к этому заданию")
 
+    old = {"description": hw.description, "deadline": str(hw.deadline), "status": hw.status}
     for field, value in data.model_dump(exclude_none=True).items():
         setattr(hw, field, value)
+    await log_action(db, user_id=current_user.id, action="UPDATE",
+                     entity_type="homework", entity_id=homework_id,
+                     old_value=old, new_value=data.model_dump(exclude_none=True, mode="json"),
+                     ip_address=request.client.host if request.client else None)
     await db.commit()
     await db.refresh(hw)
     return hw
@@ -91,6 +119,7 @@ async def update_homework(
 
 @router.delete("/{homework_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_homework(
+    request: Request,
     homework_id: int,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -104,5 +133,9 @@ async def delete_homework(
     if lesson.tutor_id != current_user.id:
         raise HTTPException(status_code=403, detail="Нет доступа к этому заданию")
 
+    await log_action(db, user_id=current_user.id, action="DELETE",
+                     entity_type="homework", entity_id=homework_id,
+                     old_value={"description": hw.description, "status": hw.status},
+                     ip_address=request.client.host if request.client else None)
     await db.delete(hw)
     await db.commit()

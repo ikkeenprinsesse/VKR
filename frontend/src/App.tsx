@@ -12,7 +12,16 @@ import PaymentsPage from "@/pages/tutor/PaymentsPage";
 import StudentSchedulePage from "@/pages/student/SchedulePage";
 import StudentHomeworkPage from "@/pages/student/HomeworkPage";
 import StudentChatPage from "@/pages/student/ChatPage";
+import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
+import ResetPasswordPage from "@/pages/ResetPasswordPage";
+import VerifyEmailPage from "@/pages/VerifyEmailPage";
 import { useAuthStore } from "@/store/auth";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
+
+function PushSetup() {
+  usePushNotifications();
+  return null;
+}
 
 function ProtectedRoute({ children, role }: { children: React.ReactNode; role?: string }) {
   const { token, user } = useAuthStore();
@@ -32,11 +41,15 @@ function StudentRoute({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <PushSetup />
       <Routes>
         {/* Public */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
 
         {/* Tutor */}
         <Route path="/dashboard/tutor"              element={<TutorRoute><TutorDashboard /></TutorRoute>} />

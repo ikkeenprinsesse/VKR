@@ -8,3 +8,10 @@ python-jose[cryptography]
 passlib[bcrypt]
 python-dotenv
 websockets
+python-multipart
+alembic
+pywebpush
+fastapi-mail==1.4.1
+apscheduler
+icalendar
+fpdf2

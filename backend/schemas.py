@@ -2,7 +2,7 @@
 from pydantic import BaseModel, EmailStr, Field, model_validator, ConfigDict
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Any
-from .models import Role, LessonStatus, AutoCheckType, AnswerStatus, PaymentStatus
+from .models import Role, LessonStatus, AutoCheckType, AnswerStatus, PaymentStatus, HomeworkStatus
 
 
 # ── Users ──────────────────────────────────────────────────────────────────────
@@ -46,6 +46,16 @@ class Token(BaseModel):
     token_type: str = "bearer"
 
 
+class TokenWithRefresh(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
 class TokenData(BaseModel):
     email: Optional[str] = None
 
@@ -53,10 +63,12 @@ class TokenData(BaseModel):
 # ── Invitations ────────────────────────────────────────────────────────────────
 
 class InvitationCreate(BaseModel):
-    expires_in_hours: int = 168
+    expires_in_hours: int = 72
 
 
 class InvitationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     token: str
     invite_link: str
     expires_at: datetime
@@ -147,6 +159,7 @@ class HomeworkOut(BaseModel):
     auto_check_type: AutoCheckType
     correct_answer: Optional[str] = None
     max_score: int
+    status: HomeworkStatus
     created_at: datetime
 
 
@@ -211,7 +224,7 @@ class PaymentAnalyticsItem(BaseModel):
 
 class MessageSend(BaseModel):
     receiver_id: int
-    text: str
+    text: str = Field(..., max_length=10_000)
     files: Optional[List[Any]] = None
 
 
@@ -260,3 +273,47 @@ class ForumPostOut(BaseModel):
     files: Optional[List[Any]] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
+
+
+# ── Email verification & password reset ────────────────────────────────────────
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str = Field(..., min_length=8)
+
+
+class EmailVerifyRequest(BaseModel):
+    token: str
+
+
+# ── Push notifications ─────────────────────────────────────────────────────────
+
+class PushSubscribeRequest(BaseModel):
+    endpoint: str
+    p256dh: str
+    auth: str
+
+
+# ── Progress ───────────────────────────────────────────────────────────────────
+
+class StudentProgressOut(BaseModel):
+    student_id: int
+    completion_rate: float    # C — доля выполненных заданий (0..1)
+    avg_score_normalized: float  # Q — средняя оценка / max_score (0..1)
+    attendance_rate: float    # A — доля посещённых занятий (0..1)
+    progress: float           # P = α·C + β·Q + γ·A в процентах (0..100)
+    total_homework: int
+    submitted_homework: int
+    graded_homework: int
+    total_lessons: int
+    attended_lessons: int
+
+
+# ── Payment update ─────────────────────────────────────────────────────────────
+
+class PaymentStatusUpdate(BaseModel):
+    status: PaymentStatus

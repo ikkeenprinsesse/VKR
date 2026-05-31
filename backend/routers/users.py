@@ -7,6 +7,7 @@ from ..database import get_db
 from ..models import User, TutorStudentRelation, Invitation
 from ..schemas import UserCreate, UserOut, UserSettingsUpdate
 from ..security import get_password_hash, get_current_user
+from ..email_service import send_verification_email
 from datetime import datetime, timezone
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -59,7 +60,10 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
     await db.commit()
     await db.refresh(db_user)
 
-    # 4. Если это студент и есть tutor_id — создаём связь
+    # 4. Отправляем письмо верификации
+    await send_verification_email(db_user, db)
+
+    # 5. Если это студент и есть tutor_id — создаём связь
     if db_user.role == "student" and tutor_id:
         relation = TutorStudentRelation(
             tutor_id=tutor_id,

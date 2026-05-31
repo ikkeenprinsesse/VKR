@@ -1,5 +1,5 @@
 # backend/routers/payments.py
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func
 from datetime import datetime, timezone
@@ -8,8 +8,10 @@ from collections import defaultdict
 
 from ..database import get_db
 from ..models import Payment, PaymentStatus, Lesson, User, Role
-from ..schemas import PaymentRecord, PaymentOut, PaymentAnalyticsItem
+from ..schemas import PaymentRecord, PaymentOut, PaymentAnalyticsItem, PaymentStatusUpdate
 from ..security import get_current_user
+from ..audit import log_action
+from ..push import send_push
 
 router = APIRouter(prefix="/payments", tags=["payments"])
 
@@ -34,6 +36,7 @@ async def my_income(
 
 @router.post("/record", response_model=PaymentOut, status_code=status.HTTP_201_CREATED)
 async def record_payment(
+    request: Request,
     data: PaymentRecord,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -62,9 +65,97 @@ async def record_payment(
         status=PaymentStatus.paid,
     )
     db.add(payment)
+    await db.flush()
+    await log_action(db, user_id=current_user.id, action="CREATE",
+                     entity_type="payment", entity_id=payment.id,
+                     new_value=data.model_dump(mode="json"),
+                     ip_address=request.client.host if request.client else None)
     await db.commit()
     await db.refresh(payment)
     return payment
+
+
+@router.patch("/{payment_id}", response_model=PaymentOut)
+async def update_payment_status(
+    request: Request,
+    payment_id: int,
+    data: PaymentStatusUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role != Role.tutor:
+        raise HTTPException(status_code=403, detail="Только репетитор может изменять статус оплаты")
+
+    result = await db.execute(select(Payment).where(Payment.id == payment_id))
+    payment = result.scalar_one_or_none()
+    if not payment:
+        raise HTTPException(status_code=404, detail="Платёж не найден")
+
+    lesson_result = await db.execute(select(Lesson).where(Lesson.id == payment.lesson_id))
+    lesson = lesson_result.scalar_one_or_none()
+    if lesson.tutor_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Это не ваш платёж")
+
+    old_status = payment.status
+    payment.status = data.status
+    await log_action(db, user_id=current_user.id, action="UPDATE",
+                     entity_type="payment", entity_id=payment_id,
+                     old_value={"status": old_status}, new_value={"status": data.status},
+                     ip_address=request.client.host if request.client else None)
+    await db.commit()
+    await db.refresh(payment)
+
+    # уведомление ученику об изменении статуса
+    lesson_res = await db.execute(select(Lesson).where(Lesson.id == payment.lesson_id))
+    lesson = lesson_res.scalar_one_or_none()
+    if lesson:
+        labels = {PaymentStatus.paid: "Оплачено", PaymentStatus.refunded: "Возврат средств"}
+        label = labels.get(data.status)
+        if label:
+            await send_push(
+                user_id=lesson.student_id,
+                title="Статус оплаты изменён",
+                body=f"{label}: {payment.amount} {payment.currency}",
+                url="/payments",
+                tag="payment-status",
+                db=db,
+            )
+
+    return payment
+
+
+@router.delete("/{payment_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_payment(
+    request: Request,
+    payment_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role != Role.tutor:
+        raise HTTPException(status_code=403, detail="Только репетитор может удалять платежи")
+
+    result = await db.execute(select(Payment).where(Payment.id == payment_id))
+    payment = result.scalar_one_or_none()
+    if not payment:
+        raise HTTPException(status_code=404, detail="Платёж не найден")
+
+    if payment.status == PaymentStatus.paid:
+        raise HTTPException(
+            status_code=400,
+            detail="Нельзя удалить оплаченный платёж. Используйте смену статуса на REFUNDED."
+        )
+
+    lesson_result = await db.execute(select(Lesson).where(Lesson.id == payment.lesson_id))
+    lesson = lesson_result.scalar_one_or_none()
+    if lesson.tutor_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Это не ваш платёж")
+
+    await log_action(db, user_id=current_user.id, action="DELETE",
+                     entity_type="payment", entity_id=payment_id,
+                     old_value={"amount": payment.amount, "status": payment.status},
+                     ip_address=request.client.host if request.client else None)
+    await db.delete(payment)
+    await db.commit()
 
 
 @router.get("/analytics", response_model=List[PaymentAnalyticsItem])

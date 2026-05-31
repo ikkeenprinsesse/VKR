@@ -13,6 +13,7 @@ export interface Homework {
   correct_answer: string | null;
   max_score: number;
   created_at: string;
+  status?: AnswerStatus;
 }
 
 export interface HomeworkCreate {

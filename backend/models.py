@@ -18,6 +18,7 @@ class Role(str, enum.Enum):
 class LessonStatus(str, enum.Enum):
     planned = "planned"
     confirmed = "confirmed"
+    in_progress = "in_progress"
     completed = "completed"
     cancelled = "cancelled"
     no_show = "no_show"
@@ -28,6 +29,16 @@ class AutoCheckType(str, enum.Enum):
     test = "test"
     numerical = "numerical"
     text = "text"
+    file = "file"
+    essay = "essay"
+
+
+class HomeworkStatus(str, enum.Enum):
+    draft = "draft"
+    assigned = "assigned"
+    submitted = "submitted"
+    overdue = "overdue"
+    graded = "graded"
 
 
 class AnswerStatus(str, enum.Enum):
@@ -56,6 +67,7 @@ class User(Base):
     photo = Column(String, nullable=True)
     rating = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
+    is_verified = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     # Настройки оплаты (для репетиторов)
     yoomoney_wallet = Column(String, nullable=True)       # номер кошелька ЮMoney
@@ -143,6 +155,9 @@ class Homework(Base):
     auto_check_type = Column(Enum(AutoCheckType), default=AutoCheckType.none, nullable=False)
     correct_answer = Column(Text, nullable=True)
     max_score = Column(Integer, default=100, nullable=False)
+    status = Column(Enum(HomeworkStatus), default=HomeworkStatus.assigned, nullable=False)
+    notified_24h = Column(Boolean, default=False, nullable=False)
+    notified_1h = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     lesson = relationship("Lesson", back_populates="homeworks")
@@ -226,3 +241,59 @@ class ForumPost(Base):
 
     thread = relationship("ForumThread", back_populates="posts")
     user = relationship("User", back_populates="forum_posts")
+
+
+class RefreshToken(Base):
+    __tablename__ = "refresh_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    token = Column(String, unique=True, nullable=False, index=True)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    revoked = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User")
+
+
+class EmailToken(Base):
+    """Токены для верификации email и сброса пароля."""
+    __tablename__ = "email_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    token = Column(String, unique=True, nullable=False, index=True)
+    purpose = Column(String, nullable=False)   # "verify" | "reset"
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    used = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User")
+
+
+class PushSubscription(Base):
+    """Подписки браузеров на Web Push уведомления."""
+    __tablename__ = "push_subscriptions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    endpoint = Column(Text, unique=True, nullable=False)
+    p256dh = Column(Text, nullable=False)   # ключ шифрования клиента
+    auth = Column(Text, nullable=False)     # ключ аутентификации клиента
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User")
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    action = Column(String, nullable=False)       # CREATE, UPDATE, DELETE
+    entity_type = Column(String, nullable=False)  # "lesson", "homework", "payment", ...
+    entity_id = Column(Integer, nullable=True)
+    old_value = Column(JSON, nullable=True)
+    new_value = Column(JSON, nullable=True)
+    ip_address = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

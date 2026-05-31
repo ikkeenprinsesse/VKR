@@ -1,10 +1,12 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Send, Loader2 } from "lucide-react";
 import { getChatHistory, sendMessage } from "@/api/chat";
 import type { Message } from "@/api/chat";
 import type { UserOut } from "@/api/auth";
 import { useAuthStore } from "@/store/auth";
 import { cn } from "@/lib/utils";
+
+const WS_BASE = import.meta.env.VITE_WS_URL ?? "ws://localhost:8000";
 
 interface Props {
   contact: UserOut;
@@ -36,13 +38,21 @@ function groupByDate(messages: Message[]) {
 }
 
 export default function ChatWindow({ contact }: Props) {
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading]   = useState(true);
   const [text, setText]         = useState("");
   const [sending, setSending]   = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef  = useRef<HTMLTextAreaElement>(null);
+  const wsRef     = useRef<WebSocket | null>(null);
+
+  const appendMessage = useCallback((msg: Message) => {
+    setMessages((prev) => {
+      if (prev.some((m) => m.id === msg.id)) return prev;
+      return [...prev, msg];
+    });
+  }, []);
 
   // Load history
   useEffect(() => {
@@ -51,6 +61,33 @@ export default function ChatWindow({ contact }: Props) {
       .then(setMessages)
       .finally(() => setLoading(false));
   }, [contact.id]);
+
+  // WebSocket — реальное время
+  useEffect(() => {
+    if (!token) return;
+
+    const ws = new WebSocket(`${WS_BASE}/chat/ws?token=${encodeURIComponent(token)}`);
+    wsRef.current = ws;
+
+    ws.onmessage = (event) => {
+      try {
+        const msg: Message = JSON.parse(event.data);
+        // показываем только сообщения в текущем чате
+        if (msg.sender_id === contact.id || msg.receiver_id === contact.id) {
+          appendMessage(msg);
+        }
+      } catch {
+        // игнорируем нераспознанные фреймы
+      }
+    };
+
+    ws.onerror = () => ws.close();
+
+    return () => {
+      ws.close();
+      wsRef.current = null;
+    };
+  }, [token, contact.id, appendMessage]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -65,7 +102,7 @@ export default function ChatWindow({ contact }: Props) {
     setText("");
     try {
       const msg = await sendMessage({ receiver_id: contact.id, text: msgText });
-      setMessages((prev) => [...prev, msg]);
+      appendMessage(msg);
     } catch {
       setText(msgText); // restore on error
     } finally {

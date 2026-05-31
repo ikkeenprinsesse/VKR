@@ -14,6 +14,7 @@
 
 import hashlib
 from urllib.parse import urlencode
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, Form
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -40,7 +41,7 @@ class PaymentLinkResponse(BaseModel):
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
-def build_payment_url(wallet: str, amount: float, label: str, description: str, success_url: str | None = None) -> str:
+def build_payment_url(wallet: str, amount: float, label: str, description: str, success_url: Optional[str] = None) -> str:
     params = {
         "receiver":       wallet,
         "quickpay-form":  "shop",

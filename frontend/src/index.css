@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900;1000&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,34 +6,191 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --primary: 263 70% 58%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 263 70% 95%;
-    --accent-foreground: 263 70% 40%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --ring: 263 70% 58%;
-    --radius: 0.75rem;
+    --background: 248 250 252;
+    --foreground: 15 23 42;
+    --card: 255 255 255;
+    --card-foreground: 15 23 42;
+    --border: 226 232 240;
+    --input: 226 232 240;
+    --primary: 124 58 237;
+    --primary-foreground: 255 255 255;
+    --secondary: 241 245 249;
+    --secondary-foreground: 15 23 42;
+    --muted: 241 245 249;
+    --muted-foreground: 100 116 139;
+    --accent: 237 233 254;
+    --accent-foreground: 91 33 182;
+    --destructive: 239 68 68;
+    --destructive-foreground: 255 255 255;
+    --ring: 124 58 237;
+    --radius: 1rem;
+    --sidebar-background: 255 255 255;
+    --sidebar-border: 226 232 240;
+
+    /* Duolingo-style palette */
+    --duo-green: #58CC02;
+    --duo-green-dark: #46A302;
+    --duo-yellow: #FFC800;
+    --duo-yellow-dark: #E6B400;
+    --duo-red: #FF4B4B;
+    --duo-red-dark: #E03E3E;
+    --duo-blue: #1CB0F6;
+    --duo-blue-dark: #0A9FDA;
+    --duo-purple: #7C3AED;
+    --duo-purple-dark: #6D28D9;
   }
 
-  * {
-    @apply border-border;
-    box-sizing: border-box;
-  }
+  * { box-sizing: border-box; }
 
   body {
-    @apply bg-background text-foreground font-sans;
+    background-color: rgb(var(--background));
+    color: rgb(var(--foreground));
+    font-family: 'Nunito', system-ui, sans-serif;
     margin: 0;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+}
+
+@layer components {
+  /* ── Duolingo card: chunky border + hard offset shadow ── */
+  .duo-card {
+    @apply bg-white border-2 border-gray-200 rounded-2xl;
+    box-shadow: 0 4px 0 #d1d5db;
+    transition: box-shadow 0.1s, transform 0.1s;
+  }
+  .duo-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 #d1d5db;
+  }
+
+  /* ── Duolingo primary button ── */
+  .duo-btn {
+    @apply font-extrabold rounded-2xl px-6 py-3.5 border-b-4 border-violet-700 bg-violet-600 text-white uppercase tracking-wide text-sm cursor-pointer select-none;
+    transition: border-width 0.08s, transform 0.08s;
+  }
+  .duo-btn:hover { @apply bg-violet-500; }
+  .duo-btn:active {
+    @apply border-b-0 border-t-0 mt-1;
+    transform: translateY(4px);
+  }
+
+  /* ── Green success button ── */
+  .duo-btn-green {
+    @apply font-extrabold rounded-2xl px-6 py-3.5 border-b-4 text-white uppercase tracking-wide text-sm cursor-pointer select-none;
+    background: var(--duo-green);
+    border-color: var(--duo-green-dark);
+    transition: border-width 0.08s, transform 0.08s;
+  }
+  .duo-btn-green:hover { filter: brightness(1.05); }
+  .duo-btn-green:active { @apply border-b-0; transform: translateY(4px); }
+
+  /* ── Yellow streak button ── */
+  .duo-btn-yellow {
+    @apply font-extrabold rounded-2xl px-6 py-3.5 border-b-4 text-gray-900 uppercase tracking-wide text-sm cursor-pointer select-none;
+    background: var(--duo-yellow);
+    border-color: var(--duo-yellow-dark);
+    transition: border-width 0.08s, transform 0.08s;
+  }
+  .duo-btn-yellow:active { @apply border-b-0; transform: translateY(4px); }
+
+  /* ── Ghost outline button ── */
+  .duo-btn-outline {
+    @apply font-extrabold rounded-2xl px-6 py-3.5 border-2 border-b-4 border-gray-200 bg-white text-gray-700 uppercase tracking-wide text-sm cursor-pointer select-none;
+    transition: border-width 0.08s, transform 0.08s;
+  }
+  .duo-btn-outline:hover { @apply bg-gray-50 border-gray-300; }
+  .duo-btn-outline:active { @apply border-b-0; transform: translateY(4px); }
+
+  /* ── Progress bar ── */
+  .duo-progress {
+    @apply h-4 bg-gray-100 rounded-full border-2 border-gray-200 overflow-hidden;
+  }
+  .duo-progress-fill {
+    @apply h-full rounded-full transition-all duration-700;
+    background: linear-gradient(90deg, #7c3aed, #a855f7);
+  }
+  .duo-progress-fill-green {
+    @apply h-full rounded-full transition-all duration-700;
+    background: linear-gradient(90deg, #58cc02, #78e808);
+  }
+
+  /* ── XP / streak badge ── */
+  .duo-badge {
+    @apply inline-flex items-center gap-1.5 font-extrabold text-xs px-3 py-1.5 rounded-full border-2 uppercase tracking-wide;
+  }
+  .duo-badge-streak {
+    @apply duo-badge bg-orange-50 border-orange-200 text-orange-600;
+  }
+  .duo-badge-xp {
+    @apply duo-badge bg-violet-50 border-violet-200 text-violet-600;
+  }
+  .duo-badge-green {
+    @apply duo-badge text-white border-b-2;
+    background: var(--duo-green);
+    border-color: var(--duo-green-dark);
+  }
+
+  /* ── Heart/life indicator ── */
+  .duo-heart {
+    @apply text-red-500 text-xl leading-none select-none;
+    filter: drop-shadow(0 1px 2px rgba(255, 75, 75, 0.3));
+  }
+  .duo-heart-empty {
+    @apply text-gray-300 text-xl leading-none select-none;
+  }
+
+  /* ── Navigation item ── */
+  .duo-nav-item {
+    @apply flex items-center gap-3 px-4 py-3 rounded-2xl font-extrabold text-sm transition-all duration-150 text-gray-500 hover:bg-gray-50 hover:text-gray-900 cursor-pointer;
+  }
+  .duo-nav-item-active {
+    @apply bg-violet-600 text-white shadow-md;
+    box-shadow: 0 3px 0 #6d28d9;
+  }
+
+  /* ── Section header underline decoration ── */
+  .duo-section-title {
+    @apply text-4xl font-black text-gray-900 relative inline-block;
+  }
+
+  /* ── Feature card: icon in circle, chunky ── */
+  .duo-feature-card {
+    @apply duo-card p-6 flex flex-col items-start gap-4 cursor-default;
+  }
+  .duo-feature-card:hover { transform: translateY(-4px); box-shadow: 0 8px 0 #d1d5db; }
+
+  /* ── Floating bouncing dot ── */
+  @keyframes duo-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  .duo-bounce { animation: duo-bounce 2s ease-in-out infinite; }
+
+  /* ── Wiggle for streak ── */
+  @keyframes duo-wiggle {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-10deg); }
+    75% { transform: rotate(10deg); }
+  }
+  .duo-wiggle { animation: duo-wiggle 0.5s ease-in-out; }
+
+  /* ── Fade-in slide up ── */
+  @keyframes duo-fade-up {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .duo-fade-up { animation: duo-fade-up 0.5s ease-out both; }
+
+  /* ── Pulse ring ── */
+  @keyframes duo-ping {
+    75%, 100% { transform: scale(2); opacity: 0; }
+  }
+
+  /* ── Streak flame pulse ── */
+  @keyframes flame-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+  }
+  .flame-pulse { animation: flame-pulse 1.4s ease-in-out infinite; }
 }

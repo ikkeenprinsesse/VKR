@@ -1,6 +1,9 @@
+import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
+from .scheduler import start_scheduler, stop_scheduler
 from .routers.users import router as users_router
 from .routers.auth import router as auth_router
 from .routers.invitations import router as invitations_router
@@ -11,23 +14,34 @@ from .routers.payments import router as payments_router
 from .routers.chat import router as chat_router
 from .routers.forum import router as forum_router
 from .routers.yoomoney import router as yoomoney_router
+from .routers.progress import router as progress_router
+from .routers.upload import router as upload_router
+from .routers.calendar import router as calendar_router
+from .routers.reports import router as reports_router
+from .routers.notifications import router as notifications_router
+from .routers.email_auth import router as email_auth_router
+from .routers.admin import router as admin_router
 
-app = FastAPI(title="TutorConnect API")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    start_scheduler()
+    yield
+    stop_scheduler()
+
+
+app = FastAPI(title="TutorConnect API", lifespan=lifespan)
+
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000")
+ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
-
-@app.on_event("startup")
-async def startup_event():
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    print("Таблицы созданы (или уже существуют)")
 
 
 app.include_router(users_router)
@@ -40,6 +54,17 @@ app.include_router(payments_router)
 app.include_router(chat_router)
 app.include_router(forum_router)
 app.include_router(yoomoney_router)
+app.include_router(progress_router)
+app.include_router(upload_router)
+app.include_router(calendar_router)
+app.include_router(reports_router)
+app.include_router(notifications_router)
+app.include_router(email_auth_router)
+
+
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
 
 
 @app.get("/")

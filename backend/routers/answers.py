@@ -1,5 +1,5 @@
 # backend/routers/answers.py
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from datetime import datetime, timezone
@@ -7,9 +7,11 @@ from typing import List
 import json
 
 from ..database import get_db
-from ..models import Answer, AnswerStatus, Homework, Lesson, AutoCheckType, User, Role
+from ..models import Answer, AnswerStatus, Homework, HomeworkStatus, Lesson, AutoCheckType, User, Role
 from ..schemas import AnswerSubmit, AnswerGrade, AnswerOut
 from ..security import get_current_user
+from ..audit import log_action
+from ..push import send_push
 from typing import Optional
 router = APIRouter(prefix="/answers", tags=["answers"])
 
@@ -56,6 +58,7 @@ def _auto_grade(hw: Homework, content: str) -> Optional[float]:
 
 @router.post("/submit", response_model=AnswerOut, status_code=status.HTTP_201_CREATED)
 async def submit_answer(
+    request: Request,
     data: AnswerSubmit,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
@@ -111,8 +114,35 @@ async def submit_answer(
         )
         db.add(answer)
 
+    await log_action(db, user_id=current_user.id, action="CREATE",
+                     entity_type="answer", entity_id=answer.id if answer.id else None,
+                     new_value={"homework_id": data.homework_id, "status": final_status},
+                     ip_address=request.client.host if request.client else None)
+
+    # обновляем статус ДЗ
+    if now > deadline:
+        hw.status = HomeworkStatus.overdue
+    elif auto_score is not None:
+        hw.status = HomeworkStatus.graded
+    else:
+        hw.status = HomeworkStatus.submitted
+
     await db.commit()
     await db.refresh(answer)
+
+    # уведомление репетитору
+    lesson_res = await db.execute(select(Lesson).where(Lesson.id == hw.lesson_id))
+    lesson = lesson_res.scalar_one_or_none()
+    if lesson:
+        await send_push(
+            user_id=lesson.tutor_id,
+            title="Ученик сдал ответ",
+            body=f"Задание: {hw.description[:60]}",
+            url="/homework",
+            tag="answer-submitted",
+            db=db,
+        )
+
     return answer
 
 
@@ -141,6 +171,7 @@ async def get_all_answers(
 
 @router.put("/{answer_id}/grade", response_model=AnswerOut)
 async def grade_answer(
+    request: Request,
     answer_id: int,
     data: AnswerGrade,
     db: AsyncSession = Depends(get_db),
@@ -171,6 +202,22 @@ async def grade_answer(
     answer.comment = data.comment
     answer.status = AnswerStatus.graded
     answer.graded_at = datetime.now(tz=timezone.utc)
+    hw.status = HomeworkStatus.graded
+    await log_action(db, user_id=current_user.id, action="UPDATE",
+                     entity_type="answer", entity_id=answer_id,
+                     new_value={"score": data.score, "comment": data.comment},
+                     ip_address=request.client.host if request.client else None)
     await db.commit()
     await db.refresh(answer)
+
+    # уведомление ученику об оценке
+    await send_push(
+        user_id=answer.student_id,
+        title="Задание проверено",
+        body=f"Оценка: {data.score}/{hw.max_score}",
+        url="/homework",
+        tag="answer-graded",
+        db=db,
+    )
+
     return answer

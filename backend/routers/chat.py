@@ -1,15 +1,17 @@
 # backend/routers/chat.py
-from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_
 from datetime import datetime, timezone
 from typing import List, Dict
 import json
 
+from jose import JWTError, jwt
+
 from ..database import get_db, SessionLocal
 from ..models import Message, TutorStudentRelation, User, Role
 from ..schemas import MessageSend, MessageOut
-from ..security import get_current_user
+from ..security import get_current_user, SECRET_KEY, ALGORITHM
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -99,23 +101,47 @@ async def send_message(
             payload = {
                 "id": msg.id,
                 "sender_id": msg.sender_id,
+                "receiver_id": msg.receiver_id,
                 "text": msg.text,
+                "files": msg.files,
+                "is_read": msg.is_read,
+                "read_at": msg.read_at.isoformat() if msg.read_at else None,
                 "created_at": msg.created_at.isoformat(),
             }
             await ws.send_text(json.dumps(payload))
         except Exception:
-            pass
+            _connections.pop(data.receiver_id, None)
 
     return msg
 
 
-@router.websocket("/ws/{user_id}")
-async def websocket_chat(websocket: WebSocket, user_id: int):
+@router.websocket("/ws")
+async def websocket_chat(
+    websocket: WebSocket,
+    token: str = Query(..., description="JWT access-token"),
+):
+    # аутентификация до accept — закрываем соединение при невалидном токене
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if not email:
+            raise JWTError()
+    except JWTError:
+        await websocket.close(code=4001)
+        return
+
+    async with SessionLocal() as db:
+        result = await db.execute(select(User).where(User.email == email))
+        user = result.scalar_one_or_none()
+
+    if not user:
+        await websocket.close(code=4001)
+        return
+
     await websocket.accept()
-    _connections[user_id] = websocket
+    _connections[user.id] = websocket
     try:
         while True:
-            # держим соединение живым, входящие данные игнорируем
             await websocket.receive_text()
     except WebSocketDisconnect:
-        _connections.pop(user_id, None)
+        _connections.pop(user.id, None)
