@@ -27,6 +27,18 @@ class UserOut(BaseModel):
     subjects: Optional[str] = None
     level: Optional[str] = None
     rating: Optional[int] = None
+    yoomoney_wallet: Optional[str] = None
+    default_lesson_price: Optional[float] = None
+
+
+class UserSettingsUpdate(BaseModel):
+    """Обновление настроек профиля репетитора"""
+    yoomoney_wallet: Optional[str] = None
+    yoomoney_secret: Optional[str] = None
+    default_lesson_price: Optional[float] = Field(None, ge=0)
+    name: Optional[str] = None
+    subjects: Optional[str] = None
+    level: Optional[str] = None
 
 
 class Token(BaseModel):

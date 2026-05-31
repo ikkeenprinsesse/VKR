@@ -57,6 +57,10 @@ class User(Base):
     rating = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    # Настройки оплаты (для репетиторов)
+    yoomoney_wallet = Column(String, nullable=True)       # номер кошелька ЮMoney
+    yoomoney_secret = Column(String, nullable=True)       # секрет для верификации вебхука
+    default_lesson_price = Column(Float, nullable=True)   # цена занятия по умолчанию
 
     tutor_relations = relationship(
         "TutorStudentRelation", back_populates="tutor",

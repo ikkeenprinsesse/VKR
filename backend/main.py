@@ -10,6 +10,7 @@ from .routers.answers import router as answers_router
 from .routers.payments import router as payments_router
 from .routers.chat import router as chat_router
 from .routers.forum import router as forum_router
+from .routers.yoomoney import router as yoomoney_router
 
 app = FastAPI(title="TutorConnect API")
 
@@ -38,6 +39,7 @@ app.include_router(answers_router)
 app.include_router(payments_router)
 app.include_router(chat_router)
 app.include_router(forum_router)
+app.include_router(yoomoney_router)
 
 
 @app.get("/")

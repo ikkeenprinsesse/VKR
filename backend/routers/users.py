@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from ..database import get_db
 from ..models import User, TutorStudentRelation, Invitation
-from ..schemas import UserCreate, UserOut
+from ..schemas import UserCreate, UserOut, UserSettingsUpdate
 from ..security import get_password_hash, get_current_user
 from datetime import datetime, timezone
 
@@ -98,3 +98,31 @@ async def get_my_students(
     relations = result.scalars().all()
 
     return [rel.student for rel in relations if rel.student]
+
+
+@router.patch("/me/settings", response_model=UserOut)
+async def update_my_settings(
+    data: UserSettingsUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Обновить настройки профиля (кошелёк ЮMoney, цена занятия и т.д.)"""
+    for field, value in data.model_dump(exclude_none=True).items():
+        setattr(current_user, field, value)
+    await db.commit()
+    await db.refresh(current_user)
+    return current_user
+
+
+@router.get("/{user_id}", response_model=UserOut)
+async def get_user_by_id(
+    user_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Получить пользователя по ID (доступно авторизованным)"""
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+    return user
