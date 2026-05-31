@@ -26,13 +26,15 @@ export interface UserOut {
   subjects?: string;
   level?: string;
   rating?: number;
+  yoomoney_wallet?: string | null;
+  default_lesson_price?: number | null;
 }
 
 export async function login(payload: LoginPayload): Promise<TokenResponse> {
   const form = new URLSearchParams();
   form.append("username", payload.username);
   form.append("password", payload.password);
-  const res = await api.post<TokenResponse>("/auth/login", form, {
+  const res = await api.post<TokenResponse>("/token", form, {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
   });
   return res.data;
