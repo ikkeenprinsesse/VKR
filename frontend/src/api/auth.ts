@@ -26,7 +26,7 @@ export interface UserOut {
   role: "tutor" | "student" | "admin";
   subjects?: string;
   level?: string;
-  rating?: number;
+  photo?: string | null;
   is_verified?: boolean;
   yoomoney_wallet?: string | null;
   default_lesson_price?: number | null;

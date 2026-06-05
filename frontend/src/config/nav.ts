@@ -1,10 +1,11 @@
-import { LayoutDashboard, Calendar, BookOpen, MessageSquare, Users, BarChart3 } from "lucide-react";
+import { LayoutDashboard, Calendar, BookOpen, MessageSquare, Users, BarChart3, UserCircle, MessagesSquare } from "lucide-react";
 
 export const STUDENT_NAV = [
   { icon: LayoutDashboard, label: "Главная",    href: "/dashboard/student" },
   { icon: Calendar,        label: "Расписание", href: "/dashboard/student/schedule" },
   { icon: BookOpen,        label: "Задания",    href: "/dashboard/student/homework" },
   { icon: MessageSquare,   label: "Чат",        href: "/dashboard/student/chat" },
+  { icon: UserCircle,      label: "Профиль",    href: "/dashboard/student/profile" },
 ];
 
 export const TUTOR_NAV = [
@@ -14,4 +15,6 @@ export const TUTOR_NAV = [
   { icon: Users,           label: "Ученики",    href: "/dashboard/tutor/students" },
   { icon: MessageSquare,   label: "Чат",        href: "/dashboard/tutor/chat" },
   { icon: BarChart3,       label: "Финансы",    href: "/dashboard/tutor/payments" },
+  { icon: MessagesSquare,  label: "Форум",      href: "/dashboard/tutor/forum" },
+  { icon: UserCircle,      label: "Профиль",    href: "/dashboard/tutor/profile" },
 ];

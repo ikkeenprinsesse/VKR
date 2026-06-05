@@ -26,19 +26,20 @@ class UserOut(BaseModel):
     role: Role
     subjects: Optional[str] = None
     level: Optional[str] = None
-    rating: Optional[int] = None
+    photo: Optional[str] = None
     yoomoney_wallet: Optional[str] = None
     default_lesson_price: Optional[float] = None
 
 
 class UserSettingsUpdate(BaseModel):
-    """Обновление настроек профиля репетитора"""
-    yoomoney_wallet: Optional[str] = None
-    yoomoney_secret: Optional[str] = None
-    default_lesson_price: Optional[float] = Field(None, ge=0)
+    """Обновление настроек профиля"""
     name: Optional[str] = None
     subjects: Optional[str] = None
     level: Optional[str] = None
+    photo: Optional[str] = None
+    yoomoney_wallet: Optional[str] = None
+    yoomoney_secret: Optional[str] = None
+    default_lesson_price: Optional[float] = Field(None, ge=0)
 
 
 class Token(BaseModel):
@@ -283,7 +284,7 @@ class MessageOut(BaseModel):
 
 class ForumThreadCreate(BaseModel):
     title: str
-    homework_id: Optional[int] = None
+    tag: Optional[str] = None
 
 
 class ForumThreadOut(BaseModel):
@@ -291,14 +292,15 @@ class ForumThreadOut(BaseModel):
 
     id: int
     title: str
+    tag: Optional[str] = None
     tutor_id: int
-    homework_id: Optional[int] = None
+    author_name: Optional[str] = None
+    post_count: int = 0
     created_at: datetime
 
 
 class ForumPostCreate(BaseModel):
     text: str
-    files: Optional[List[Any]] = None
 
 
 class ForumPostOut(BaseModel):
@@ -307,8 +309,8 @@ class ForumPostOut(BaseModel):
     id: int
     thread_id: int
     user_id: int
+    author_name: Optional[str] = None
     text: str
-    files: Optional[List[Any]] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 

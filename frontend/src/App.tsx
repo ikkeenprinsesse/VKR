@@ -12,6 +12,9 @@ import PaymentsPage from "@/pages/tutor/PaymentsPage";
 import StudentSchedulePage from "@/pages/student/SchedulePage";
 import StudentHomeworkPage from "@/pages/student/HomeworkPage";
 import StudentChatPage from "@/pages/student/ChatPage";
+import ProfilePage from "@/pages/ProfilePage";
+import ForumPage from "@/pages/tutor/ForumPage";
+import NotFoundPage from "@/pages/NotFoundPage";
 import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import VerifyEmailPage from "@/pages/VerifyEmailPage";
@@ -58,14 +61,17 @@ export default function App() {
         <Route path="/dashboard/tutor/students"     element={<TutorRoute><StudentsPage /></TutorRoute>} />
         <Route path="/dashboard/tutor/chat"         element={<TutorRoute><TutorChatPage /></TutorRoute>} />
         <Route path="/dashboard/tutor/payments"     element={<TutorRoute><PaymentsPage /></TutorRoute>} />
+        <Route path="/dashboard/tutor/forum"         element={<TutorRoute><ForumPage /></TutorRoute>} />
+        <Route path="/dashboard/tutor/profile"      element={<TutorRoute><ProfilePage /></TutorRoute>} />
 
         {/* Student */}
         <Route path="/dashboard/student"            element={<StudentRoute><StudentDashboard /></StudentRoute>} />
         <Route path="/dashboard/student/schedule"   element={<StudentRoute><StudentSchedulePage /></StudentRoute>} />
         <Route path="/dashboard/student/homework"   element={<StudentRoute><StudentHomeworkPage /></StudentRoute>} />
         <Route path="/dashboard/student/chat"       element={<StudentRoute><StudentChatPage /></StudentRoute>} />
+        <Route path="/dashboard/student/profile"    element={<StudentRoute><ProfilePage /></StudentRoute>} />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );

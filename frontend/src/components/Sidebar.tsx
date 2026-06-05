@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { type LucideIcon, LogOut, Settings, ChevronLeft, ChevronRight } from "lucide-react";
+import { type LucideIcon, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth";
-import TutorSettingsModal from "@/components/TutorSettingsModal";
 
 interface NavItem {
   icon: LucideIcon;
@@ -19,9 +18,9 @@ export default function Sidebar({ items }: SidebarProps) {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
 
   const isTutor = user?.role === "tutor";
+  const profileHref = isTutor ? "/dashboard/tutor/profile" : "/dashboard/student/profile";
 
   function handleLogout() {
     logout();
@@ -91,31 +90,35 @@ export default function Sidebar({ items }: SidebarProps) {
           ))}
         </nav>
 
-        {/* Bottom */}
-        <div className="p-3 border-t-2 border-gray-100 space-y-1">
-          {isTutor && !collapsed && (
-            <button
-              onClick={() => setShowSettings(true)}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-bold text-gray-500 hover:bg-gray-50 hover:text-gray-800 transition-colors"
-            >
-              <Settings className="w-5 h-5 text-gray-400" />
-              <span>Настройки оплаты</span>
-            </button>
-          )}
-
+        {/* Bottom: avatar → profile link */}
+        <div className="p-3 border-t-2 border-gray-100">
           <div className={cn(
             "flex items-center gap-3 px-3 py-2 rounded-xl",
             collapsed && "justify-center"
           )}>
-            <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center shrink-0 text-violet-700 font-black text-sm">
-              {user?.name?.[0]?.toUpperCase() ?? "?"}
-            </div>
+            <NavLink
+              to={profileHref}
+              title={collapsed ? "Профиль" : undefined}
+              className="shrink-0"
+            >
+              {user?.photo ? (
+                <img
+                  src={user.photo}
+                  alt={user.name}
+                  className="w-9 h-9 rounded-xl object-cover border-2 border-violet-200 hover:opacity-80 transition-opacity"
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center text-violet-700 font-black text-sm hover:bg-violet-200 transition-colors">
+                  {user?.name?.[0]?.toUpperCase() ?? "?"}
+                </div>
+              )}
+            </NavLink>
             {!collapsed && (
               <>
-                <div className="flex-1 min-w-0">
+                <NavLink to={profileHref} className="flex-1 min-w-0 hover:opacity-70 transition-opacity">
                   <p className="text-sm font-bold text-gray-900 truncate">{user?.name}</p>
                   <p className="text-xs text-gray-400">{isTutor ? "Репетитор" : "Ученик"}</p>
-                </div>
+                </NavLink>
                 <button
                   onClick={handleLogout}
                   className="p-1.5 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors"
@@ -128,10 +131,6 @@ export default function Sidebar({ items }: SidebarProps) {
           </div>
         </div>
       </aside>
-
-      {showSettings && isTutor && (
-        <TutorSettingsModal onClose={() => setShowSettings(false)} />
-      )}
     </>
   );
 }
