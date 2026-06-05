@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import uuid
+import os
 from datetime import datetime, timedelta, timezone
 
 from ..database import get_db
@@ -11,6 +12,8 @@ from ..schemas import InvitationCreate, InvitationOut, InvitationAccept
 from ..security import get_current_user
 
 router = APIRouter(prefix="/invitations", tags=["invitations"])
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost")
 
 
 @router.post("/", response_model=InvitationOut)
@@ -35,7 +38,7 @@ async def create_invitation(
     await db.commit()
     await db.refresh(invitation)
 
-    invite_link = f"http://127.0.0.1:8000/invite/{token}"   # позже заменишь на настоящий домен
+    invite_link = f"{FRONTEND_URL}/register?invite={token}"
 
     return InvitationOut(token=token, invite_link=invite_link, expires_at=expires_at)
 
