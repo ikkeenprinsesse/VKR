@@ -23,7 +23,7 @@ const ROLE_CARDS = [
     role: "student" as Role,
     emoji: "🎓",
     title: "Я ученик",
-    desc: "Выполняю задания, зарабатываю XP и стрики",
+    desc: "Выполняю задания, отслеживаю прогресс и общаюсь с репетитором",
     color: "border-green-300 bg-green-50",
     activeColor: "border-green-600 bg-green-100",
     badgeColor: "bg-green-500",
@@ -103,7 +103,7 @@ export default function RegisterPage() {
               { emoji: "✅", text: "Бесплатно навсегда" },
               { emoji: "🔒", text: "Безопасная платформа" },
               { emoji: "⚡", text: "Настройка за 2 минуты" },
-              { emoji: "🎮", text: "Геймификация для учеников" },
+              { emoji: "📬", text: "Push-уведомления о занятиях" },
             ].map(({ emoji, text }) => (
               <div key={text} className="flex items-center gap-3 bg-white/10 rounded-2xl px-4 py-3 border border-white/10">
                 <span className="text-xl">{emoji}</span>
