@@ -1,13 +1,15 @@
 import { useEffect, useRef } from "react";
 import { Calendar, BookOpen,
-  ChevronRight, Clock, CheckCircle2, AlertCircle } from "lucide-react";
+  ChevronRight, Clock, CheckCircle2, AlertCircle, TrendingUp } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useAsync } from "@/hooks/useAsync";
 import { getMySchedule } from "@/api/lessons";
 import { getAssignedHomework } from "@/api/homework";
+import { getMyProgress } from "@/api/progress";
 import DashboardLayout from "@/components/DashboardLayout";
 import { STUDENT_NAV } from "@/config/nav";
+import ErrorBanner from "@/components/ErrorBanner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -105,6 +107,9 @@ export default function StudentDashboard() {
 
   const lessons   = useAsync(getMySchedule);
   const homeworks = useAsync(getAssignedHomework);
+  const progress  = useAsync(() =>
+    user?.id ? getMyProgress(user.id) : Promise.resolve(null)
+  );
 
   const now = new Date();
 
@@ -124,10 +129,6 @@ export default function StudentDashboard() {
   const overdueHw = allHw.filter((hw) => new Date(hw.deadline) < now && hw.status !== "graded");
   const gradedHw  = allHw.filter((hw) => hw.status === "graded");
 
-  const todayGoal = 3;
-  const todayDone = gradedHw.length;
-  const goalPct   = Math.min(100, Math.round((todayDone / todayGoal) * 100));
-
   const displayHw = [...overdueHw, ...pendingHw].slice(0, 5);
 
   const stats = [
@@ -137,8 +138,18 @@ export default function StudentDashboard() {
     { label: "Занятий / нед.", value: weekLessons.length, icon: Calendar,    color: "text-blue-600",   bg: "bg-blue-50" },
   ];
 
+  const pageError = lessons.error || homeworks.error;
+
   return (
     <DashboardLayout items={STUDENT_NAV}>
+
+      {pageError && (
+        <ErrorBanner
+          error={pageError}
+          onRetry={() => { lessons.refetch(); homeworks.refetch(); }}
+          className="mb-4"
+        />
+      )}
 
       {/* Header */}
       <AnimatedCard>
@@ -152,21 +163,61 @@ export default function StudentDashboard() {
         </div>
       </AnimatedCard>
 
-      {/* Daily goal */}
+      {/* Progress */}
       <AnimatedCard delay={60}>
         <div className="bg-white border border-gray-100 rounded-2xl p-5 mb-5 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <span className="font-semibold text-gray-700 text-sm">Дневная цель</span>
-            <span className="text-sm font-semibold text-violet-600">{todayDone} / {todayGoal} заданий</span>
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="w-4 h-4 text-violet-500" />
+            <span className="font-bold text-gray-800 text-sm">Мой прогресс</span>
+            {user?.level && (
+              <span className="ml-auto text-xs font-semibold text-gray-400 bg-gray-100 px-2.5 py-1 rounded-full">
+                {user.level}
+              </span>
+            )}
           </div>
-          <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-700"
-              style={{ width: `${goalPct}%`, background: "linear-gradient(90deg, #7c3aed, #a855f7)" }}
-            />
-          </div>
-          {goalPct >= 100 && (
-            <p className="text-xs font-semibold text-emerald-600 mt-2">Цель выполнена — отличная работа!</p>
+          {progress.loading ? (
+            <Skeleton className="h-16 w-full" />
+          ) : progress.data ? (
+            <div className="space-y-3">
+              {/* Итоговый балл */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs text-gray-500 font-semibold">Общий прогресс</span>
+                  <span className="text-sm font-black text-violet-600">{progress.data.progress}%</span>
+                </div>
+                <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{ width: `${progress.data.progress}%`, background: "linear-gradient(90deg, #7c3aed, #a855f7)" }}
+                  />
+                </div>
+              </div>
+              {/* Детали */}
+              <div className="grid grid-cols-3 gap-3 pt-1">
+                <div className="text-center">
+                  <p className="text-lg font-black text-gray-900">
+                    {progress.data.submitted_homework}/{progress.data.total_homework}
+                  </p>
+                  <p className="text-[11px] text-gray-400 font-semibold">ДЗ сдано</p>
+                </div>
+                <div className="text-center border-x border-gray-100">
+                  <p className="text-lg font-black text-gray-900">
+                    {Math.round(progress.data.avg_score_normalized * 100)}%
+                  </p>
+                  <p className="text-[11px] text-gray-400 font-semibold">Ср. оценка</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-black text-gray-900">
+                    {progress.data.attended_lessons}/{progress.data.total_lessons}
+                  </p>
+                  <p className="text-[11px] text-gray-400 font-semibold">Посещаемость</p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400 text-center py-2">
+              Прогресс появится после первых занятий с репетитором
+            </p>
           )}
         </div>
       </AnimatedCard>

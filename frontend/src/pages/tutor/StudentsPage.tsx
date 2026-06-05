@@ -10,11 +10,13 @@ import { getMyStudents, createInvitation } from "@/api/users";
 import { getMySchedule } from "@/api/lessons";
 import { getAssignedHomework } from "@/api/homework";
 import { getMyIncome } from "@/api/payments";
+import { getMyProgress } from "@/api/progress";
 import type { UserOut } from "@/api/auth";
 import type { Lesson } from "@/api/lessons";
 import type { Homework } from "@/api/homework";
 import type { Payment } from "@/api/payments";
 import Sidebar from "@/components/Sidebar";
+import ErrorBanner from "@/components/ErrorBanner";
 import LessonCard from "@/components/LessonCard";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -118,7 +120,14 @@ function StudentCard({ student, lessons, homeworks, payments, selected, onClick 
 
       {/* Info */}
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-gray-900 truncate">{student.name}</p>
+        <div className="flex items-center gap-2 min-w-0">
+          <p className="font-semibold text-gray-900 truncate">{student.name}</p>
+          {student.level && (
+            <span className="shrink-0 text-[10px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-full">
+              {student.level}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-2 mt-0.5">
           {upcoming.length > 0 && (
             <span className="text-xs text-violet-600 font-medium">
@@ -158,6 +167,7 @@ interface DetailPanelProps {
 
 function DetailPanel({ student, allLessons, allHomeworks, allPayments, onClose }: DetailPanelProps) {
   const [detailTab, setDetailTab] = useState<"lessons" | "homework" | "payments">("lessons");
+  const progress = useAsync(() => getMyProgress(student.id));
 
   const lessons  = allLessons.filter((l) => l.student_id === student.id);
   const payments = allPayments.filter((p) => lessons.some((l) => l.id === p.lesson_id));
@@ -235,6 +245,60 @@ function DetailPanel({ student, allLessons, allHomeworks, allPayments, onClose }
               </strong>
             </p>
           </div>
+        )}
+      </div>
+
+      {/* Progress block */}
+      <div className="px-6 py-4 border-b border-gray-100">
+        <div className="flex items-center gap-2 mb-3">
+          <TrendingUp className="w-4 h-4 text-violet-500" />
+          <span className="text-sm font-bold text-gray-700">Прогресс ученика</span>
+          {student.subjects && (
+            <span className="ml-auto text-xs text-gray-400">{student.subjects}</span>
+          )}
+        </div>
+        {progress.loading ? (
+          <Skeleton className="h-14 w-full" />
+        ) : progress.data ? (
+          <div className="space-y-2">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-gray-500">Общий балл</span>
+                <span className="text-sm font-black text-violet-600">{progress.data.progress}%</span>
+              </div>
+              <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{
+                    width: `${progress.data.progress}%`,
+                    background: "linear-gradient(90deg, #7c3aed, #a855f7)",
+                  }}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center pt-1">
+              <div>
+                <p className="text-sm font-bold text-gray-900">
+                  {progress.data.submitted_homework}/{progress.data.total_homework}
+                </p>
+                <p className="text-[10px] text-gray-400">ДЗ сдано</p>
+              </div>
+              <div className="border-x border-gray-100">
+                <p className="text-sm font-bold text-gray-900">
+                  {Math.round(progress.data.avg_score_normalized * 100)}%
+                </p>
+                <p className="text-[10px] text-gray-400">Ср. оценка</p>
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-900">
+                  {progress.data.attended_lessons}/{progress.data.total_lessons}
+                </p>
+                <p className="text-[10px] text-gray-400">Посещаемость</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-xs text-gray-400">Нет данных — занятия ещё не проводились</p>
         )}
       </div>
 
@@ -403,6 +467,13 @@ export default function StudentsPage() {
       <Sidebar items={TUTOR_NAV} />
 
       <main className="flex-1 flex flex-col overflow-hidden">
+        {(students.error || lessons.error) && (
+          <ErrorBanner
+            error={students.error || lessons.error || ""}
+            onRetry={() => { students.refetch(); lessons.refetch(); homeworks.refetch(); payments.refetch(); }}
+            className="m-4"
+          />
+        )}
         {/* Верхняя шапка — кнопка всегда видна */}
         <div className="shrink-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between gap-4">
           <div>
