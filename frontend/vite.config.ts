@@ -18,7 +18,7 @@ export default defineConfig({
       "/homework":      { target: "http://127.0.0.1:8000", changeOrigin: true },
       "/answers":       { target: "http://127.0.0.1:8000", changeOrigin: true },
       "/payments":      { target: "http://127.0.0.1:8000", changeOrigin: true },
-      "/chat":          { target: "http://127.0.0.1:8000", changeOrigin: true, ws: true },
+      "/chat":          { target: "ws://127.0.0.1:8000", changeOrigin: true, ws: true },
       "/forum":         { target: "http://127.0.0.1:8000", changeOrigin: true },
       "/invitations":   { target: "http://127.0.0.1:8000", changeOrigin: true },
       "/yoomoney":      { target: "http://127.0.0.1:8000", changeOrigin: true },
