@@ -12,6 +12,11 @@ export async function getMyStudents(): Promise<UserOut[]> {
   return res.data;
 }
 
+export async function getMyTutors(): Promise<UserOut[]> {
+  const res = await api.get<UserOut[]>("/users/my-tutors");
+  return res.data;
+}
+
 export async function createInvitation(expiresInHours = 168): Promise<InvitationOut> {
   const res = await api.post<InvitationOut>("/invitations/", { expires_in_hours: expiresInHours });
   return res.data;

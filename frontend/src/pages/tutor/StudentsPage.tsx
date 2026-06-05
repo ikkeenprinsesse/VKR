@@ -1,10 +1,9 @@
 import { useState } from "react";
+import { TUTOR_NAV } from "@/config/nav";
 import {
-  Users, BookOpen, Calendar, MessageSquare,
-  BarChart3, TrendingUp, Plus, Copy, Check,
+  Users, BookOpen, Calendar, TrendingUp, Copy, Check,
   Mail, BookOpenCheck, Clock, ChevronRight,
-  UserPlus, X, Loader2,
-} from "lucide-react";
+  UserPlus, X, Loader2 } from "lucide-react";
 import { useAsync } from "@/hooks/useAsync";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { getMyStudents, createInvitation } from "@/api/users";
@@ -17,34 +16,25 @@ import type { Homework } from "@/api/homework";
 import type { Payment } from "@/api/payments";
 import Sidebar from "@/components/Sidebar";
 import LessonCard from "@/components/LessonCard";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
-const NAV = [
-  { icon: BarChart3,     label: "Обзор",     href: "/dashboard/tutor" },
-  { icon: Calendar,      label: "Расписание", href: "/dashboard/tutor/schedule" },
-  { icon: BookOpen,      label: "Задания",    href: "/dashboard/tutor/homework" },
-  { icon: Users,         label: "Ученики",    href: "/dashboard/tutor/students" },
-  { icon: MessageSquare, label: "Чат",        href: "/dashboard/tutor/chat" },
-  { icon: TrendingUp,    label: "Финансы",    href: "/dashboard/tutor/payments" },
-];
 
-// ── Invite block ───────────────────────────────────────────────────────────────
-function InviteBlock() {
-  const [link, setLink]       = useState<string | null>(null);
-  const [copied, setCopied]   = useState(false);
+// ── Invite button (compact, for header) ────────────────────────────────────────
+function InviteButton() {
+  const [link, setLink]     = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [open, setOpen]     = useState(false);
 
   async function generate() {
     setLoading(true);
     try {
       const inv = await createInvitation();
       setLink(inv.invite_link);
-    } finally {
-      setLoading(false);
-    }
+      setOpen(true);
+    } finally { setLoading(false); }
   }
 
   async function copy() {
@@ -55,39 +45,41 @@ function InviteBlock() {
   }
 
   return (
-    <div className="p-5 bg-gradient-to-br from-violet-50 to-blue-50 border border-violet-100 rounded-2xl">
-      <div className="flex items-center gap-2 mb-3">
-        <UserPlus className="w-5 h-5 text-primary" />
-        <h3 className="font-semibold text-gray-900">Пригласить нового ученика</h3>
-      </div>
-      <p className="text-sm text-gray-500 mb-4">
-        Создайте персональную ссылку и отправьте её ученику. Действует 7 дней.
-      </p>
-      {link ? (
-        <div className="space-y-2">
-          <div className="flex gap-2">
+    <div className="relative shrink-0">
+      <button
+        onClick={open ? () => setOpen(false) : generate}
+        disabled={loading}
+        className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors shadow-sm disabled:opacity-60"
+      >
+        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+        Пригласить ученика
+      </button>
+
+      {open && link && (
+        <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 z-50">
+          <p className="text-xs font-semibold text-gray-500 mb-2">Ссылка действует 7 дней:</p>
+          <div className="flex gap-2 mb-2">
             <input
-              readOnly
-              value={link}
-              className="flex-1 text-xs bg-white border border-gray-200 rounded-xl px-3 py-2.5 text-gray-700 truncate focus:outline-none"
+              readOnly value={link}
+              className="flex-1 text-xs bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-gray-700 truncate focus:outline-none"
             />
             <button
               onClick={copy}
-              className="shrink-0 flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              className="shrink-0 flex items-center gap-1.5 px-3 py-2 bg-violet-600 text-white rounded-xl text-xs font-bold hover:bg-violet-700 transition-colors"
             >
-              {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-              {copied ? "Скопировано" : "Копировать"}
+              {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              {copied ? "OK" : "Копировать"}
             </button>
           </div>
-          <button onClick={() => setLink(null)} className="text-xs text-gray-400 hover:text-gray-600">
-            Создать новую ссылку
-          </button>
+          <div className="flex gap-3">
+            <button onClick={() => { setLink(null); generate(); }} className="text-xs text-gray-400 hover:text-gray-600">
+              Создать новую
+            </button>
+            <button onClick={() => setOpen(false)} className="text-xs text-gray-400 hover:text-gray-600 ml-auto">
+              Закрыть
+            </button>
+          </div>
         </div>
-      ) : (
-        <Button onClick={generate} disabled={loading} className="w-full gap-2">
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-          Создать ссылку-приглашение
-        </Button>
       )}
     </div>
   );
@@ -239,8 +231,7 @@ function DetailPanel({ student, allLessons, allHomeworks, allPayments, onClose }
               <strong>
                 {new Date(upcoming[0].date).toLocaleString("ru-RU", {
                   weekday: "short", day: "numeric", month: "short",
-                  hour: "2-digit", minute: "2-digit",
-                })}
+                  hour: "2-digit", minute: "2-digit" })}
               </strong>
             </p>
           </div>
@@ -303,8 +294,7 @@ function DetailPanel({ student, allLessons, allHomeworks, allPayments, onClose }
                     <p className="text-sm font-medium text-gray-900 line-clamp-2 mb-1">{hw.description}</p>
                     <div className="flex items-center gap-3 text-xs text-gray-500">
                       <span>Дедлайн: {new Date(hw.deadline).toLocaleString("ru-RU", {
-                        day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
-                      })}</span>
+                        day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
                       <span>· {hw.max_score} б</span>
                       {isOverdue && <Badge variant="danger">Просрочено</Badge>}
                     </div>
@@ -410,40 +400,39 @@ export default function StudentsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar items={NAV} />
+      <Sidebar items={TUTOR_NAV} />
 
-      <main className="flex-1 flex overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden">
+        {/* Верхняя шапка — кнопка всегда видна */}
+        <div className="shrink-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Ученики</h1>
+            {!students.loading && (
+              <p className="text-sm text-gray-400">
+                {allStudents.length === 0
+                  ? "Пока нет учеников"
+                  : `${allStudents.length} ${allStudents.length === 1 ? "ученик" : allStudents.length < 5 ? "ученика" : "учеников"}`}
+              </p>
+            )}
+          </div>
+          <InviteButton />
+        </div>
+
+        <div className="flex-1 flex overflow-hidden">
         {/* Left: student list */}
         <div className={cn(
           "flex flex-col bg-white border-r border-gray-100 transition-all",
           selected ? "w-[380px] shrink-0" : "flex-1"
         )}>
-          {/* Header */}
-          <div className="px-6 py-5 border-b border-gray-100">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">Ученики</h1>
-                {!students.loading && (
-                  <p className="text-sm text-gray-500 mt-0.5">
-                    {allStudents.length === 0
-                      ? "Пока нет учеников"
-                      : `${allStudents.length} ${allStudents.length === 1 ? "ученик" : allStudents.length < 5 ? "ученика" : "учеников"}`
-                    }
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Search */}
-            {allStudents.length > 0 && (
-              <input
-                type="search"
-                placeholder="Поиск по имени или email..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full h-10 rounded-xl border border-gray-200 bg-gray-50 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:bg-white transition-colors"
-              />
-            )}
+          {/* Search */}
+          <div className="px-4 py-3 border-b border-gray-100">
+            <input
+              type="search"
+              placeholder="Поиск по имени или email..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full h-10 rounded-xl border border-gray-200 bg-gray-50 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:bg-white transition-colors"
+            />
           </div>
 
           {/* List */}
@@ -481,10 +470,6 @@ export default function StudentsPage() {
             )}
           </div>
 
-          {/* Invite block at bottom */}
-          <div className="p-4 border-t border-gray-100">
-            <InviteBlock />
-          </div>
         </div>
 
         {/* Right: detail panel */}
@@ -509,6 +494,7 @@ export default function StudentsPage() {
             </div>
           </div>
         )}
+        </div>{/* end flex-1 flex overflow-hidden */}
       </main>
     </div>
   );

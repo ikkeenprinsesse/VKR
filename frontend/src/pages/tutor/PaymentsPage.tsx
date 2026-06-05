@@ -1,9 +1,8 @@
 import { useState } from "react";
+import { TUTOR_NAV } from "@/config/nav";
 import {
-  TrendingUp, Calendar, BookOpen, Users,
-  MessageSquare, BarChart3, Plus, Loader2,
-  CheckCircle2, Clock, RefreshCw, ChevronDown,
-} from "lucide-react";
+  TrendingUp, BarChart3, Plus, Loader2,
+  CheckCircle2, Clock, RefreshCw, ChevronDown } from "lucide-react";
 import { useAsync } from "@/hooks/useAsync";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { getMyIncome, recordPayment, getPaymentAnalytics } from "@/api/payments";
@@ -20,31 +19,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { MONTHS } from "@/lib/date";
 
-const NAV = [
-  { icon: BarChart3,     label: "Обзор",     href: "/dashboard/tutor" },
-  { icon: Calendar,      label: "Расписание", href: "/dashboard/tutor/schedule" },
-  { icon: BookOpen,      label: "Задания",    href: "/dashboard/tutor/homework" },
-  { icon: Users,         label: "Ученики",    href: "/dashboard/tutor/students" },
-  { icon: MessageSquare, label: "Чат",        href: "/dashboard/tutor/chat" },
-  { icon: TrendingUp,    label: "Финансы",    href: "/dashboard/tutor/payments" },
-];
 
 const STATUS_ICON: Record<Payment["status"], typeof CheckCircle2> = {
   paid:     CheckCircle2,
   pending:  Clock,
-  refunded: RefreshCw,
-};
+  refunded: RefreshCw };
 const STATUS_LABEL: Record<Payment["status"], string> = {
-  paid: "Оплачено", pending: "Ожидает", refunded: "Возврат",
-};
+  paid: "Оплачено", pending: "Ожидает", refunded: "Возврат" };
 const STATUS_VARIANT: Record<Payment["status"], "success" | "warning" | "danger"> = {
-  paid: "success", pending: "warning", refunded: "danger",
-};
+  paid: "success", pending: "warning", refunded: "danger" };
 
 // ── Record payment modal ───────────────────────────────────────────────────────
 function RecordModal({
-  lessons, students, onClose, onSaved,
-}: {
+  lessons, students, onClose, onSaved }: {
   lessons: ReturnType<typeof useAsync<ReturnType<typeof getMySchedule> extends Promise<infer T> ? T : never>>["data"];
   students: ReturnType<typeof useAsync<ReturnType<typeof getMyStudents> extends Promise<infer T> ? T : never>>["data"];
   onClose: () => void;
@@ -178,15 +165,18 @@ export default function PaymentsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar items={NAV} />
+      <Sidebar items={TUTOR_NAV} />
 
       <main className="flex-1 overflow-y-auto">
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-gray-50/80 backdrop-blur-sm border-b border-gray-100 px-8 py-4 flex items-center justify-between">
+        <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between">
           <h1 className="text-xl font-bold text-gray-900">Финансы</h1>
-          <Button onClick={() => setShowRecord(true)} className="gap-2">
+          <button
+            onClick={() => setShowRecord(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors shadow-sm shrink-0"
+          >
             <Plus className="w-4 h-4" /> Записать оплату
-          </Button>
+          </button>
         </div>
 
         <div className="p-8 space-y-6">
@@ -368,8 +358,7 @@ export default function PaymentsPage() {
                         <div className="pb-3 text-xs text-gray-500 space-y-1 pl-12">
                           <p>Занятие: {new Date(lesson.date).toLocaleString("ru-RU", {
                             weekday: "short", day: "numeric", month: "long",
-                            hour: "2-digit", minute: "2-digit",
-                          })}</p>
+                            hour: "2-digit", minute: "2-digit" })}</p>
                           <p>Длительность: {lesson.duration} мин</p>
                           {lesson.topic && <p>Тема: {lesson.topic}</p>}
                         </div>

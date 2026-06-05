@@ -1,8 +1,8 @@
 import { useState } from "react";
+import { TUTOR_NAV } from "@/config/nav";
 import {
   ChevronLeft, ChevronRight, Plus, Calendar,
-  LayoutGrid, List, SlidersHorizontal,
-} from "lucide-react";
+  LayoutGrid, List, Clock, Trash2, RefreshCw, Lock } from "lucide-react";
 import { useAsync } from "@/hooks/useAsync";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { getMySchedule, updateLesson } from "@/api/lessons";
@@ -13,23 +13,18 @@ import MonthView from "@/components/calendar/MonthView";
 import CreateLessonModal from "@/components/CreateLessonModal";
 import LessonDetailModal from "@/components/LessonDetailModal";
 import LessonCard from "@/components/LessonCard";
-import { Button } from "@/components/ui/button";
+
 import { Skeleton } from "@/components/ui/skeleton";
 import { startOfWeek, weekDays, lessonsForDay, MONTHS } from "@/lib/date";
 import type { Lesson } from "@/api/lessons";
+import { getMySlots, deleteSlot, slotLabel } from "@/api/slots";
+import type { Slot } from "@/api/slots";
+import CreateSlotModal from "@/components/CreateSlotModal";
 import { cn } from "@/lib/utils";
 
 type ViewMode = "week" | "month" | "list";
 type StatusFilter = "all" | Lesson["status"];
 
-const NAV = [
-  { icon: Calendar, label: "Обзор",     href: "/dashboard/tutor" },
-  { icon: Calendar, label: "Расписание", href: "/dashboard/tutor/schedule" },
-  { icon: LayoutGrid, label: "Задания",  href: "/dashboard/tutor/homework" },
-  { icon: List,      label: "Ученики",   href: "/dashboard/tutor/students" },
-  { icon: SlidersHorizontal, label: "Чат", href: "/dashboard/tutor/chat" },
-  { icon: Calendar,  label: "Финансы",   href: "/dashboard/tutor/payments" },
-];
 
 const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
   { value: "all",       label: "Все" },
@@ -51,6 +46,8 @@ export default function TutorSchedulePage() {
   const [showCreate, setShowCreate]         = useState(false);
   const [createSlotDate, setCreateSlotDate] = useState<Date | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
+  const [showSlotModal, setShowSlotModal]   = useState(false);
+  const slots = useAsync(getMySlots);
 
   // ── Navigation ─────────────────────────────────────────────────────────────
   function navigate(dir: -1 | 1) {
@@ -103,12 +100,11 @@ export default function TutorSchedulePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar items={NAV} />
+      <Sidebar items={TUTOR_NAV} />
 
       <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Toolbar */}
-        <div className="shrink-0 bg-white border-b border-gray-100 px-6 py-3 flex items-center gap-4">
-          {/* Navigation */}
+        {/* Верхняя строка: навигация по датам + кнопка — всегда видна */}
+        <div className="shrink-0 bg-white border-b border-gray-100 px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <button
               onClick={() => navigate(-1)}
@@ -116,7 +112,7 @@ export default function TutorSchedulePage() {
             >
               <ChevronLeft className="w-4 h-4 text-gray-600" />
             </button>
-            <span className="text-base font-semibold text-gray-900 min-w-[220px] text-center">
+            <span className="text-base font-semibold text-gray-900 min-w-[180px] text-center">
               {title}
             </span>
             <button
@@ -127,57 +123,72 @@ export default function TutorSchedulePage() {
             </button>
             <button
               onClick={() => setCurDate(new Date())}
-              className="text-sm text-primary border border-primary/30 rounded-lg px-3 py-1 hover:bg-violet-50 transition-colors ml-1"
+              className="text-sm text-primary border border-primary/30 rounded-lg px-3 py-1 hover:bg-violet-50 transition-colors"
             >
               Сегодня
             </button>
           </div>
 
-          {/* Status filter */}
-          <div className="flex items-center gap-1 ml-2 overflow-x-auto">
-            {STATUS_FILTERS.map((f) => (
-              <button
-                key={f.value}
-                onClick={() => setStatus(f.value)}
-                className={cn(
-                  "shrink-0 text-xs px-3 py-1.5 rounded-full border transition-colors",
-                  statusFilter === f.value
-                    ? "bg-primary text-white border-primary"
-                    : "border-gray-200 text-gray-500 hover:border-primary/50"
-                )}
-              >
-                {f.label}
-              </button>
-            ))}
+          <div className="flex items-center gap-3 shrink-0">
+            {/* View toggle */}
+            <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-xl">
+              {(["week", "month", "list"] as ViewMode[]).map((v) => {
+                const icons = { week: Calendar, month: LayoutGrid, list: List };
+                const labels = { week: "Неделя", month: "Месяц", list: "Список" };
+                const Icon = icons[v];
+                return (
+                  <button
+                    key={v}
+                    onClick={() => setView(v)}
+                    className={cn(
+                      "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                      view === v ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+                    )}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {labels[v]}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button
+              onClick={() => setShowSlotModal(true)}
+              className="flex items-center gap-2 px-3 py-2 bg-white border border-violet-300 text-violet-700 text-sm font-bold rounded-xl hover:bg-violet-50 transition-colors"
+            >
+              <Clock className="w-4 h-4" />
+              Слоты
+              {slots.data && slots.data.length > 0 && (
+                <span className="bg-violet-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none">
+                  {slots.data.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => { setCreateSlotDate(null); setShowCreate(true); }}
+              className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors shadow-sm"
+            >
+              <Plus className="w-4 h-4" /> Занятие
+            </button>
           </div>
+        </div>
 
-          <div className="flex-1" />
-
-          {/* View toggle */}
-          <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-xl">
-            {(["week", "month", "list"] as ViewMode[]).map((v) => {
-              const icons = { week: Calendar, month: LayoutGrid, list: List };
-              const labels = { week: "Неделя", month: "Месяц", list: "Список" };
-              const Icon = icons[v];
-              return (
-                <button
-                  key={v}
-                  onClick={() => setView(v)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
-                    view === v ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
-                  )}
-                >
-                  <Icon className="w-4 h-4" />
-                  {labels[v]}
-                </button>
-              );
-            })}
-          </div>
-
-          <Button onClick={() => { setCreateSlotDate(null); setShowCreate(true); }} className="gap-2 shrink-0">
-            <Plus className="w-4 h-4" /> Занятие
-          </Button>
+        {/* Вторая строка: фильтры по статусу */}
+        <div className="shrink-0 bg-white border-b border-gray-100 px-6 py-2 flex items-center gap-1.5 overflow-x-auto">
+          {STATUS_FILTERS.map((f) => (
+            <button
+              key={f.value}
+              onClick={() => setStatus(f.value)}
+              className={cn(
+                "shrink-0 text-xs px-3 py-1.5 rounded-full border transition-colors",
+                statusFilter === f.value
+                  ? "bg-primary text-white border-primary"
+                  : "border-gray-200 text-gray-500 hover:border-primary/50"
+              )}
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
 
         {/* Calendar body */}
@@ -191,8 +202,13 @@ export default function TutorSchedulePage() {
                   weekStart={weekStart}
                   lessons={filtered}
                   participants={students.data ?? []}
+                  isTutor
                   onLessonClick={setSelectedLesson}
                   onSlotClick={handleSlotClick}
+                  onStatusChange={(updated) => {
+                    lessons.refetch();
+                    if (selectedLesson?.id === updated.id) setSelectedLesson(updated);
+                  }}
                 />
               )}
               {view === "month" && (
@@ -216,8 +232,7 @@ export default function TutorSchedulePage() {
                     <div key={day.toISOString()}>
                       <h3 className="text-sm font-semibold text-gray-500 mb-2 sticky top-0 bg-gray-50 py-1">
                         {day.toLocaleDateString("ru-RU", {
-                          weekday: "long", day: "numeric", month: "long",
-                        })}
+                          weekday: "long", day: "numeric", month: "long" })}
                       </h3>
                       <div className="space-y-2">
                         {lessonsForDay(filtered, day).map((l) => (
@@ -241,12 +256,57 @@ export default function TutorSchedulePage() {
         </div>
       </main>
 
+      {/* Панель доступных слотов */}
+      {slots.data && slots.data.length > 0 && (
+        <div className="shrink-0 bg-white border-t border-gray-100 px-6 py-3">
+          <div className="flex items-center gap-3 mb-2">
+            <Clock className="w-4 h-4 text-violet-500" />
+            <span className="text-sm font-bold text-gray-700">Слоты для записи</span>
+            <button
+              onClick={() => setShowSlotModal(true)}
+              className="ml-auto text-xs text-violet-600 font-semibold hover:underline flex items-center gap-1"
+            >
+              <Plus className="w-3 h-3" /> Добавить
+            </button>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {slots.data.map((slot: Slot) => (
+              <div
+                key={slot.id}
+                className="flex items-center gap-2 px-3 py-1.5 bg-violet-50 border border-violet-200 rounded-xl text-xs font-semibold text-violet-700 group"
+              >
+                {slot.is_recurring ? <RefreshCw className="w-3 h-3" /> : <Calendar className="w-3 h-3" />}
+                {slotLabel(slot)}
+                <span className="text-violet-400">· {slot.duration} мин</span>
+                {slot.reserved_for_student_id && (
+                  <Lock className="w-3 h-3 text-violet-400" />
+                )}
+                <button
+                  onClick={async () => { await deleteSlot(slot.id); slots.refetch(); }}
+                  className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all ml-0.5"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {showCreate && (
         <CreateLessonModal
           students={students.data ?? []}
           initialDate={createSlotDate ?? undefined}
           onClose={() => { setShowCreate(false); setCreateSlotDate(null); }}
           onCreated={() => lessons.refetch()}
+        />
+      )}
+
+      {showSlotModal && (
+        <CreateSlotModal
+          students={students.data ?? []}
+          onClose={() => setShowSlotModal(false)}
+          onCreated={() => { setShowSlotModal(false); slots.refetch(); }}
         />
       )}
 

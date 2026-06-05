@@ -14,7 +14,14 @@ RUN pip install --no-cache-dir -r backend/requirements.txt
 
 # Копируем весь проект (uvicorn запускается как "backend.main:app")
 COPY backend/ ./backend/
+COPY alembic.ini ./alembic.ini
+
+# Папка для загружаемых файлов
+RUN mkdir -p /app/uploads
 
 EXPOSE 8000
 
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+COPY backend/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]

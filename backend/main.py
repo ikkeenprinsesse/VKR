@@ -21,6 +21,7 @@ from .routers.reports import router as reports_router
 from .routers.notifications import router as notifications_router
 from .routers.email_auth import router as email_auth_router
 from .routers.admin import router as admin_router
+from .routers.slots import router as slots_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -60,6 +61,7 @@ app.include_router(calendar_router)
 app.include_router(reports_router)
 app.include_router(notifications_router)
 app.include_router(email_auth_router)
+app.include_router(slots_router)
 
 
 @app.get("/health")

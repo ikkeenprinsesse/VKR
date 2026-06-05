@@ -1,13 +1,13 @@
 import { useState } from "react";
 import {
   ChevronLeft, ChevronRight, Calendar,
-  LayoutGrid, List, BookOpen, MessageSquare,
-} from "lucide-react";
+  LayoutGrid, List, Clock, Video, CalendarPlus, RefreshCw, Loader2 } from "lucide-react";
 import { useAsync } from "@/hooks/useAsync";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { getMySchedule } from "@/api/lessons";
 import api from "@/api/client";
 import type { UserOut } from "@/api/auth";
+import { STUDENT_NAV } from "@/config/nav";
 import Sidebar from "@/components/Sidebar";
 import WeekView from "@/components/calendar/WeekView";
 import MonthView from "@/components/calendar/MonthView";
@@ -16,16 +16,12 @@ import LessonDetailModal from "@/components/LessonDetailModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { startOfWeek, weekDays, lessonsForDay, MONTHS } from "@/lib/date";
 import type { Lesson } from "@/api/lessons";
+import { getAvailableSlots, bookSlot, slotLabel } from "@/api/slots";
+import type { Slot } from "@/api/slots";
 import { cn } from "@/lib/utils";
 
 type ViewMode = "week" | "month" | "list";
 
-const NAV = [
-  { icon: Calendar,      label: "Обзор",          href: "/dashboard/student" },
-  { icon: Calendar,      label: "Расписание",      href: "/dashboard/student/schedule" },
-  { icon: BookOpen,      label: "Мои задания",     href: "/dashboard/student/homework" },
-  { icon: MessageSquare, label: "Чат",             href: "/dashboard/student/chat" },
-];
 
 export default function StudentSchedulePage() {
   useCurrentUser();
@@ -43,6 +39,23 @@ export default function StudentSchedulePage() {
   const [view, setView]         = useState<ViewMode>("week");
   const [curDate, setCurDate]   = useState(new Date());
   const [selected, setSelected] = useState<Lesson | null>(null);
+  const [bookingId, setBookingId] = useState<number | null>(null);
+  const [bookError, setBookError] = useState<string | null>(null);
+  const availableSlots = useAsync(getAvailableSlots);
+
+  async function handleBook(slot: Slot) {
+    setBookingId(slot.id);
+    setBookError(null);
+    try {
+      await bookSlot(slot.id);
+      lessons.refetch();
+      availableSlots.refetch();
+    } catch (e: any) {
+      setBookError(e?.response?.data?.detail ?? "Ошибка записи");
+    } finally {
+      setBookingId(null);
+    }
+  }
 
   function navigate(dir: -1 | 1) {
     setCurDate((d) => {
@@ -78,7 +91,7 @@ export default function StudentSchedulePage() {
     return `${MONTHS[curDate.getMonth()]} ${curDate.getFullYear()}`;
   })();
 
-  // Count upcoming lessons this week
+  // Ближайшее занятие
   const now = new Date();
   const weekEnd = new Date(weekStart);
   weekEnd.setDate(weekStart.getDate() + 7);
@@ -87,9 +100,24 @@ export default function StudentSchedulePage() {
     return d >= now && d < weekEnd && l.status !== "cancelled";
   }).length;
 
+  const nextLesson = all
+    .filter((l) => new Date(l.date) >= now && l.status !== "cancelled")
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0] ?? null;
+
+  const nextLessonMs = nextLesson ? new Date(nextLesson.date).getTime() - now.getTime() : null;
+  const nextLessonLabel = (() => {
+    if (!nextLessonMs) return null;
+    const min = Math.floor(nextLessonMs / 60000);
+    if (min < 60) return `через ${min} мин`;
+    const h = Math.floor(min / 60);
+    if (h < 24) return `через ${h} ч`;
+    const d = Math.floor(h / 24);
+    return `через ${d} дн`;
+  })();
+
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar items={NAV} />
+      <Sidebar items={STUDENT_NAV} />
 
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Toolbar */}
@@ -150,6 +178,79 @@ export default function StudentSchedulePage() {
           </div>
         </div>
 
+        {/* Баннер ближайшего занятия */}
+        {nextLesson && nextLessonLabel && (
+          <div
+            className="shrink-0 mx-4 mt-4 bg-violet-600 rounded-2xl px-5 py-3.5 flex items-center gap-4 cursor-pointer hover:bg-violet-700 transition-colors"
+            onClick={() => setSelected(nextLesson)}
+          >
+            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+              <Clock className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white font-bold text-sm">
+                {nextLesson.topic ?? "Занятие"} — {nextLessonLabel}
+              </p>
+              <p className="text-violet-200 text-xs">
+                {new Date(nextLesson.date).toLocaleString("ru-RU", {
+                  weekday: "short", day: "numeric", month: "short",
+                  hour: "2-digit", minute: "2-digit",
+                })} · {nextLesson.duration} мин
+              </p>
+            </div>
+            {nextLesson.meeting_link && (
+              <a
+                href={nextLesson.meeting_link}
+                target="_blank"
+                rel="noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-xl text-white text-xs font-bold transition-colors"
+              >
+                <Video className="w-3.5 h-3.5" /> Войти
+              </a>
+            )}
+          </div>
+        )}
+
+        {/* Доступные слоты для записи */}
+        {availableSlots.data && availableSlots.data.length > 0 && (
+          <div className="shrink-0 mx-4 mt-3 bg-white border border-gray-100 rounded-2xl px-5 py-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <CalendarPlus className="w-4 h-4 text-violet-500" />
+              <span className="text-sm font-bold text-gray-800">Доступные слоты для записи</span>
+            </div>
+            {bookError && (
+              <div className="text-xs text-red-600 bg-red-50 rounded-xl px-3 py-2 mb-2">{bookError}</div>
+            )}
+            <div className="flex flex-wrap gap-2">
+              {availableSlots.data.map((slot: Slot) => (
+                <div
+                  key={slot.id}
+                  className="flex items-center gap-2 px-3 py-2 border border-gray-200 rounded-xl bg-gray-50 hover:border-violet-300 hover:bg-violet-50 transition-colors group"
+                >
+                  <div className="text-violet-500">
+                    {slot.is_recurring ? <RefreshCw className="w-3.5 h-3.5" /> : <Calendar className="w-3.5 h-3.5" />}
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-gray-800">{slotLabel(slot)}</p>
+                    <p className="text-[10px] text-gray-400">{slot.duration} мин</p>
+                  </div>
+                  <button
+                    onClick={() => handleBook(slot)}
+                    disabled={bookingId === slot.id}
+                    className="ml-2 flex items-center gap-1 px-2.5 py-1 bg-violet-600 text-white text-xs font-bold rounded-lg hover:bg-violet-700 transition-colors disabled:opacity-60"
+                  >
+                    {bookingId === slot.id
+                      ? <Loader2 className="w-3 h-3 animate-spin" />
+                      : "Записаться"
+                    }
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Calendar body */}
         <div className="flex-1 overflow-hidden p-4">
           {lessons.loading ? (
@@ -182,8 +283,7 @@ export default function StudentSchedulePage() {
                     <div key={day.toISOString()}>
                       <h3 className="text-sm font-semibold text-gray-500 mb-2 sticky top-0 bg-gray-50 py-1">
                         {day.toLocaleDateString("ru-RU", {
-                          weekday: "long", day: "numeric", month: "long",
-                        })}
+                          weekday: "long", day: "numeric", month: "long" })}
                       </h3>
                       <div className="space-y-2">
                         {lessonsForDay(all, day).map((l) => (

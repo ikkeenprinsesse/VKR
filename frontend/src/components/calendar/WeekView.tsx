@@ -16,12 +16,14 @@ const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR
 interface Props {
   weekStart: Date;
   lessons: Lesson[];
-  participants?: UserOut[]; // students for tutor / [tutor] for student
+  participants?: UserOut[];
+  isTutor?: boolean;
   onLessonClick?: (lesson: Lesson) => void;
-  onSlotClick?: (date: Date) => void; // click on empty slot → create
+  onSlotClick?: (date: Date) => void;
+  onStatusChange?: (lesson: Lesson) => void;
 }
 
-export default function WeekView({ weekStart, lessons, participants, onLessonClick, onSlotClick }: Props) {
+export default function WeekView({ weekStart, lessons, participants, isTutor, onLessonClick, onSlotClick, onStatusChange }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const days = weekDays(weekStart);
   const today = new Date();
@@ -139,8 +141,10 @@ export default function WeekView({ weekStart, lessons, participants, onLessonCli
                       lesson={lesson}
                       participantName={name}
                       compact={height < 48}
+                      isTutor={isTutor}
                       style={{ top, height, position: "absolute" }}
                       onClick={onLessonClick ? () => onLessonClick(lesson) : undefined}
+                      onStatusChange={onStatusChange}
                     />
                   );
                 })}

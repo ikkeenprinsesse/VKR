@@ -104,6 +104,29 @@ async def get_my_students(
     return [rel.student for rel in relations if rel.student]
 
 
+@router.get("/my-tutors", response_model=list[UserOut])
+async def get_my_tutors(
+        db: AsyncSession = Depends(get_db),
+        current_user: User = Depends(get_current_user)
+):
+    """Получить список репетиторов текущего ученика"""
+    if current_user.role != "student":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Только ученики могут использовать этот эндпоинт"
+        )
+
+    stmt = (
+        select(TutorStudentRelation)
+        .where(TutorStudentRelation.student_id == current_user.id)
+        .options(joinedload(TutorStudentRelation.tutor))
+    )
+    result = await db.execute(stmt)
+    relations = result.scalars().all()
+
+    return [rel.tutor for rel in relations if rel.tutor]
+
+
 @router.patch("/me/settings", response_model=UserOut)
 async def update_my_settings(
     data: UserSettingsUpdate,

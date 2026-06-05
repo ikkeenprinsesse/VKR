@@ -1,7 +1,7 @@
 # backend/routers/chat.py
 from fastapi import APIRouter, Depends, HTTPException, status, WebSocket, WebSocketDisconnect, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, or_
+from sqlalchemy import select, and_, or_, func
 from datetime import datetime, timezone
 from typing import List, Dict
 import json
@@ -15,12 +15,11 @@ from ..security import get_current_user, SECRET_KEY, ALGORITHM
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
-# хранилище активных WebSocket-соединений: user_id -> WebSocket
+# user_id -> WebSocket
 _connections: Dict[int, WebSocket] = {}
 
 
 async def _assert_allowed_chat(db: AsyncSession, user_a: int, user_b: int) -> None:
-    """Проверяет, что пользователи связаны отношением репетитор-ученик."""
     rel = await db.execute(
         select(TutorStudentRelation).where(
             or_(
@@ -39,6 +38,19 @@ async def _assert_allowed_chat(db: AsyncSession, user_a: int, user_b: int) -> No
         raise HTTPException(status_code=403, detail="Вы не можете переписываться с этим пользователем")
 
 
+def _msg_to_dict(msg: Message) -> dict:
+    return {
+        "id": msg.id,
+        "sender_id": msg.sender_id,
+        "receiver_id": msg.receiver_id,
+        "text": msg.text,
+        "files": msg.files or [],
+        "is_read": msg.is_read,
+        "read_at": msg.read_at.isoformat() if msg.read_at else None,
+        "created_at": msg.created_at.isoformat(),
+    }
+
+
 @router.get("/history/{other_user_id}", response_model=List[MessageOut])
 async def chat_history(
     other_user_id: int,
@@ -51,14 +63,8 @@ async def chat_history(
         select(Message)
         .where(
             or_(
-                and_(
-                    Message.sender_id == current_user.id,
-                    Message.receiver_id == other_user_id,
-                ),
-                and_(
-                    Message.sender_id == other_user_id,
-                    Message.receiver_id == current_user.id,
-                ),
+                and_(Message.sender_id == current_user.id, Message.receiver_id == other_user_id),
+                and_(Message.sender_id == other_user_id, Message.receiver_id == current_user.id),
             )
         )
         .order_by(Message.created_at)
@@ -66,14 +72,37 @@ async def chat_history(
     result = await db.execute(stmt)
     messages = result.scalars().all()
 
-    # помечаем входящие как прочитанные
+    # пометить входящие как прочитанные
     now = datetime.now(tz=timezone.utc)
     for msg in messages:
         if msg.receiver_id == current_user.id and not msg.is_read:
             msg.is_read = True
             msg.read_at = now
     await db.commit()
+
+    # уведомить отправителя о прочтении через WS
+    if other_user_id in _connections:
+        ws = _connections[other_user_id]
+        try:
+            await ws.send_text(json.dumps({"type": "read", "by": current_user.id}))
+        except Exception:
+            _connections.pop(other_user_id, None)
+
     return messages
+
+
+@router.get("/unread-counts")
+async def unread_counts(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Возвращает {sender_id: количество непрочитанных} для текущего пользователя."""
+    result = await db.execute(
+        select(Message.sender_id, func.count(Message.id).label("cnt"))
+        .where(Message.receiver_id == current_user.id, Message.is_read == False)
+        .group_by(Message.sender_id)
+    )
+    return {str(row.sender_id): row.cnt for row in result}
 
 
 @router.post("/send", response_model=MessageOut, status_code=status.HTTP_201_CREATED)
@@ -94,21 +123,11 @@ async def send_message(
     await db.commit()
     await db.refresh(msg)
 
-    # real-time push если получатель подключён
+    # real-time push получателю
     if data.receiver_id in _connections:
         ws = _connections[data.receiver_id]
         try:
-            payload = {
-                "id": msg.id,
-                "sender_id": msg.sender_id,
-                "receiver_id": msg.receiver_id,
-                "text": msg.text,
-                "files": msg.files,
-                "is_read": msg.is_read,
-                "read_at": msg.read_at.isoformat() if msg.read_at else None,
-                "created_at": msg.created_at.isoformat(),
-            }
-            await ws.send_text(json.dumps(payload))
+            await ws.send_text(json.dumps({"type": "message", **_msg_to_dict(msg)}))
         except Exception:
             _connections.pop(data.receiver_id, None)
 
@@ -118,9 +137,8 @@ async def send_message(
 @router.websocket("/ws")
 async def websocket_chat(
     websocket: WebSocket,
-    token: str = Query(..., description="JWT access-token"),
+    token: str = Query(...),
 ):
-    # аутентификация до accept — закрываем соединение при невалидном токене
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
@@ -142,6 +160,17 @@ async def websocket_chat(
     _connections[user.id] = websocket
     try:
         while True:
-            await websocket.receive_text()
+            raw = await websocket.receive_text()
+            # поддержка typing: {"type": "typing", "to": user_id}
+            try:
+                frame = json.loads(raw)
+                if frame.get("type") == "typing":
+                    target_id = int(frame["to"])
+                    if target_id in _connections:
+                        await _connections[target_id].send_text(
+                            json.dumps({"type": "typing", "from": user.id})
+                        )
+            except Exception:
+                pass
     except WebSocketDisconnect:
         _connections.pop(user.id, None)

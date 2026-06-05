@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import {
-  LayoutDashboard, Calendar, BookOpen, MessageSquare, BarChart3,
-  Users, Plus, Copy, Check, ChevronRight, Zap,
-} from "lucide-react";
+import { TUTOR_NAV } from "@/config/nav";
+import { Calendar, BookOpen, BarChart3,
+  Users, Plus, Copy, Check, ChevronRight, Zap } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useAsync } from "@/hooks/useAsync";
@@ -16,14 +15,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
-const NAV = [
-  { icon: LayoutDashboard, label: "Главная",    href: "/dashboard/tutor" },
-  { icon: Calendar,        label: "Расписание", href: "/dashboard/tutor/schedule" },
-  { icon: BookOpen,        label: "Задания",    href: "/dashboard/tutor/homework" },
-  { icon: Users,           label: "Ученики",    href: "/dashboard/tutor/students" },
-  { icon: MessageSquare,   label: "Чат",        href: "/dashboard/tutor/chat" },
-  { icon: BarChart3,       label: "Финансы",    href: "/dashboard/tutor/payments" },
-];
 
 function AnimatedCard({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -103,7 +94,7 @@ export default function TutorDashboard() {
   ];
 
   return (
-    <DashboardLayout items={NAV}>
+    <DashboardLayout items={TUTOR_NAV}>
 
       {/* Header */}
       <AnimatedCard>

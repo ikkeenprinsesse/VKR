@@ -285,6 +285,35 @@ class PushSubscription(Base):
     user = relationship("User")
 
 
+class AvailableSlot(Base):
+    """Доступный слот репетитора для записи.
+
+    is_recurring=False  → разовый слот на конкретную дату
+    is_recurring=True   → регулярный: каждую неделю в weekday в hour:minute
+    reserved_for_student_id → слот закреплён за конкретным учеником
+    booked_lesson_id    → когда ученик записался — ссылка на созданный урок
+    """
+    __tablename__ = "available_slots"
+
+    id                       = Column(Integer, primary_key=True, index=True)
+    tutor_id                 = Column(Integer, ForeignKey("users.id"), nullable=False)
+    duration                 = Column(Integer, nullable=False, default=60)       # минуты
+    is_recurring             = Column(Boolean, default=False)
+    # Разовый слот
+    slot_date                = Column(DateTime(timezone=True), nullable=True)
+    # Регулярный слот
+    weekday                  = Column(Integer, nullable=True)   # 0=Пн … 6=Вс
+    slot_hour                = Column(Integer, nullable=True)   # 0-23
+    slot_minute              = Column(Integer, nullable=True)   # 0/30 etc
+    # Ограничения записи
+    reserved_for_student_id  = Column(Integer, ForeignKey("users.id"), nullable=True)
+    is_active                = Column(Boolean, default=True)
+    created_at               = Column(DateTime(timezone=True), server_default=func.now())
+
+    tutor    = relationship("User", foreign_keys=[tutor_id])
+    reserved = relationship("User", foreign_keys=[reserved_for_student_id])
+
+
 class AuditLog(Base):
     __tablename__ = "audit_logs"
 

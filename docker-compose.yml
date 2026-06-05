@@ -11,8 +11,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"          # убрать в проде, если DB не нужна снаружи
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
@@ -30,12 +28,27 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       SECRET_KEY: ${SECRET_KEY}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-30}
       DEBUG: ${DEBUG:-false}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-noreply@tutorspace.local}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-TutorSpace}
+      MAIL_SERVER: ${MAIL_SERVER:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_STARTTLS: ${MAIL_STARTTLS:-true}
+      MAIL_SSL_TLS: ${MAIL_SSL_TLS:-false}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_CLAIMS_EMAIL: ${VAPID_CLAIMS_EMAIL:-admin@tutorspace.local}
+      UPLOAD_DIR: /app/uploads
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
     depends_on:
       db:
         condition: service_healthy
-    ports:
-      - "8000:8000"          # убрать в проде, доступ только через nginx
+    volumes:
+      - uploads_data:/app/uploads
 
   # ── React frontend (nginx) ────────────────────────────────────────────────
   frontend:
@@ -50,3 +63,4 @@ services:
 
 volumes:
   postgres_data:
+  uploads_data:

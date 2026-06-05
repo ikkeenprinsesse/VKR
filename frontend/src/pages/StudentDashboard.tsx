@@ -1,24 +1,17 @@
 import { useEffect, useRef } from "react";
-import {
-  LayoutDashboard, Calendar, BookOpen, MessageSquare,
-  ChevronRight, Clock, CheckCircle2, AlertCircle,
-} from "lucide-react";
+import { Calendar, BookOpen,
+  ChevronRight, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useAsync } from "@/hooks/useAsync";
 import { getMySchedule } from "@/api/lessons";
 import { getAssignedHomework } from "@/api/homework";
 import DashboardLayout from "@/components/DashboardLayout";
+import { STUDENT_NAV } from "@/config/nav";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
-const NAV = [
-  { icon: LayoutDashboard, label: "Главная",    href: "/dashboard/student" },
-  { icon: Calendar,        label: "Расписание", href: "/dashboard/student/schedule" },
-  { icon: BookOpen,        label: "Задания",    href: "/dashboard/student/homework" },
-  { icon: MessageSquare,   label: "Чат",        href: "/dashboard/student/chat" },
-];
 
 function AnimatedCard({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -145,7 +138,7 @@ export default function StudentDashboard() {
   ];
 
   return (
-    <DashboardLayout items={NAV}>
+    <DashboardLayout items={STUDENT_NAV}>
 
       {/* Header */}
       <AnimatedCard>

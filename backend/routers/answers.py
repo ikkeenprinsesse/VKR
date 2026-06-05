@@ -146,6 +146,20 @@ async def submit_answer(
     return answer
 
 
+@router.get("/my", response_model=List[AnswerOut])
+async def get_my_answers(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Ученик получает все свои ответы."""
+    if current_user.role != Role.student:
+        raise HTTPException(status_code=403, detail="Только ученик может использовать этот эндпоинт")
+    result = await db.execute(
+        select(Answer).where(Answer.student_id == current_user.id)
+    )
+    return result.scalars().all()
+
+
 @router.get("/{homework_id}/all", response_model=List[AnswerOut])
 async def get_all_answers(
     homework_id: int,

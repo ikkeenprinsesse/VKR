@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createHomework } from "@/api/homework";
-import type { AutoCheckType } from "@/api/homework";
+import type { AutoCheckType, HWFile } from "@/api/homework";
 import type { Lesson } from "@/api/lessons";
 import type { UserOut } from "@/api/auth";
+import { FileUploader } from "@/components/FileAttachments";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -19,21 +20,21 @@ interface Props {
 const CHECK_TYPES: { value: AutoCheckType; label: string; hint: string }[] = [
   { value: "none",      label: "Без автопроверки", hint: "Проверяете вручную" },
   { value: "numerical", label: "Число",             hint: "Ответ — число (погрешность ±0.01)" },
-  { value: "text",      label: "Текст",             hint: "Сравнение строк без учёта регистра" },
+  { value: "text",      label: "Текст",             hint: "Сравнение без учёта регистра" },
   { value: "test",      label: "Тест",              hint: 'JSON: {"q1":"a","q2":"b"}' },
 ];
 
 export default function CreateHomeworkModal({ lessons, students, onClose, onCreated }: Props) {
-  const [lessonId, setLessonId]       = useState<string>(lessons[0]?.id.toString() ?? "");
-  const [description, setDescription] = useState("");
-  const [deadline, setDeadline]       = useState("");
-  const [maxScore, setMaxScore]       = useState("100");
-  const [checkType, setCheckType]     = useState<AutoCheckType>("none");
-  const [correctAnswer, setCorrect]   = useState("");
-  const [loading, setLoading]         = useState(false);
-  const [error, setError]             = useState<string | null>(null);
+  const [lessonId,     setLessonId]     = useState<string>(lessons[0]?.id.toString() ?? "");
+  const [description,  setDescription]  = useState("");
+  const [deadline,     setDeadline]     = useState("");
+  const [maxScore,     setMaxScore]     = useState("100");
+  const [checkType,    setCheckType]    = useState<AutoCheckType>("none");
+  const [correctAnswer, setCorrect]     = useState("");
+  const [files,        setFiles]        = useState<HWFile[]>([]);
+  const [loading,      setLoading]      = useState(false);
+  const [error,        setError]        = useState<string | null>(null);
 
-  // минимальный дедлайн — через 1 час
   const minDeadline = new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16);
 
   function lessonLabel(l: Lesson) {
@@ -52,6 +53,7 @@ export default function CreateHomeworkModal({ lessons, students, onClose, onCrea
       await createHomework({
         lesson_id: Number(lessonId),
         description,
+        files: files.length ? files : undefined,
         deadline: new Date(deadline).toISOString(),
         auto_check_type: checkType,
         correct_answer: checkType !== "none" ? correctAnswer || undefined : undefined,
@@ -70,7 +72,7 @@ export default function CreateHomeworkModal({ lessons, students, onClose, onCrea
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white rounded-t-2xl flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
+        <div className="sticky top-0 bg-white rounded-t-2xl flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100 z-10">
           <h2 className="text-xl font-bold text-gray-900">Новое задание</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <X className="w-5 h-5" />
@@ -113,6 +115,18 @@ export default function CreateHomeworkModal({ lessons, students, onClose, onCrea
             />
           </div>
 
+          {/* File attachments */}
+          <div className="space-y-1.5">
+            <Label>Файлы к заданию</Label>
+            <FileUploader
+              files={files}
+              onChange={setFiles}
+              label="Прикрепить файл или фото"
+              maxFiles={5}
+            />
+            <p className="text-xs text-gray-400">До 5 файлов: изображения, PDF, Word, Excel</p>
+          </div>
+
           {/* Deadline + Max score */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -152,18 +166,17 @@ export default function CreateHomeworkModal({ lessons, students, onClose, onCrea
                   className={cn(
                     "flex flex-col items-start p-3 rounded-xl border text-left transition-all",
                     checkType === ct.value
-                      ? "border-primary bg-violet-50 text-primary"
+                      ? "border-violet-500 bg-violet-50 text-violet-700"
                       : "border-gray-200 text-gray-600 hover:border-gray-300"
                   )}
                 >
-                  <span className="text-sm font-medium">{ct.label}</span>
+                  <span className="text-sm font-semibold">{ct.label}</span>
                   <span className="text-xs opacity-60 mt-0.5">{ct.hint}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Correct answer */}
           {checkType !== "none" && (
             <div className="space-y-1.5">
               <Label htmlFor="hw-answer">Правильный ответ</Label>
@@ -187,7 +200,7 @@ export default function CreateHomeworkModal({ lessons, students, onClose, onCrea
           )}
 
           {error && (
-            <div className="text-sm text-destructive bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+            <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
               {error}
             </div>
           )}
@@ -198,7 +211,7 @@ export default function CreateHomeworkModal({ lessons, students, onClose, onCrea
             </Button>
             <Button type="submit" className="flex-1" disabled={loading || lessons.length === 0}>
               {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Создать
+              Создать задание
             </Button>
           </div>
         </form>

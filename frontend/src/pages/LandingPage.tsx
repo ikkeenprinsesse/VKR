@@ -1,17 +1,5 @@
 import { useRef, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { DotLottieReact } from "@lottiefiles/dotlottie-react";
-
-/* ── Lottie animation URLs from LottieFiles CDN ─────────────────────────── */
-const LOTTIE = {
-  hero:          "https://lottie.host/a5b42f1a-e97a-42a3-8b63-d17c8ff3e7e1/TfQY8j2dxB.lottie",
-  calendar:      "https://lottie.host/7fea39d6-1a0c-44bc-a982-7b63c5c76e15/QL6DqkXxu9.lottie",
-  homework:      "https://lottie.host/28f4f8c5-b7c7-4d4c-bc8e-5f3c63f8f9d2/homework.lottie",
-  chat:          "https://lottie.host/5c21b72e-ad04-4e8c-a04d-7c2a88b3be93/chat.lottie",
-  analytics:     "https://lottie.host/9a1d63e5-7b2c-4f8a-a3d1-2e5c9b7f4e8d/analytics.lottie",
-  trophy:        "https://lottie.host/b3f2e8a1-6d4c-4b9e-8c2f-1a7d5e3b9c4f/trophy.lottie",
-  celebration:   "https://lottie.host/e4c7a2f5-8b3d-4e6c-a9f1-3d8b5c2e7a4f/celebration.lottie",
-};
 
 /* ── Feature cards data ──────────────────────────────────────────────────── */
 const FEATURES = [
@@ -48,14 +36,6 @@ const FEATURES = [
     badge: "bg-yellow-500",
   },
   {
-    emoji: "🏆",
-    color: "bg-orange-50 border-orange-200",
-    iconBg: "bg-orange-100",
-    label: "Геймификация",
-    desc: "Ученики зарабатывают XP, поддерживают стрики и открывают достижения.",
-    badge: "bg-orange-500",
-  },
-  {
     emoji: "🔗",
     color: "bg-pink-50 border-pink-200",
     iconBg: "bg-pink-100",
@@ -71,29 +51,6 @@ const STEPS = [
   { num: "3", emoji: "🚀", title: "Работай эффективно", desc: "Занятия, ДЗ, оплаты — всё в одном месте" },
 ];
 
-const TESTIMONIALS = [
-  {
-    avatar: "А",
-    name: "Анна К.",
-    role: "Репетитор по математике",
-    text: "Теперь трачу время на уроки, а не на таблицы с оплатами. Ученики сами видят своё расписание!",
-    color: "bg-violet-500",
-  },
-  {
-    avatar: "М",
-    name: "Михаил Р.",
-    role: "Репетитор по английскому",
-    text: "Чат и домашние задания в одном месте — больше не теряются сообщения в WhatsApp.",
-    color: "bg-blue-500",
-  },
-  {
-    avatar: "С",
-    name: "Светлана Д.",
-    role: "Репетитор по физике",
-    text: "Геймификация работает! Ученики сами напоминают мне о заданиях, чтобы не потерять стрик.",
-    color: "bg-green-500",
-  },
-];
 
 /* ── Animation-on-scroll hook ────────────────────────────────────────────── */
 function useReveal(delay = 0) {
@@ -119,46 +76,6 @@ function useReveal(delay = 0) {
   return ref;
 }
 
-/* ── Animated counter ─────────────────────────────────────────────────────── */
-function CountUp({ to, suffix = "" }: { to: number; suffix?: string }) {
-  const [val, setVal] = useState(0);
-  const ref = useRef<HTMLSpanElement>(null);
-  useEffect(() => {
-    const obs = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) {
-        let start = 0;
-        const step = Math.ceil(to / 60);
-        const id = setInterval(() => {
-          start += step;
-          if (start >= to) { setVal(to); clearInterval(id); } else setVal(start);
-        }, 16);
-        obs.disconnect();
-      }
-    }, { threshold: 0.5 });
-    if (ref.current) obs.observe(ref.current);
-    return () => obs.disconnect();
-  }, [to]);
-  return <span ref={ref}>{val}{suffix}</span>;
-}
-
-/* ── Lottie with fallback emoji ───────────────────────────────────────────── */
-function LottieOrEmoji({ src, fallback, className = "w-32 h-32" }: { src: string; fallback: string; className?: string }) {
-  const [failed, setFailed] = useState(false);
-  if (failed) return <span className={`flex items-center justify-center text-6xl ${className}`}>{fallback}</span>;
-  return (
-    <div className={className}>
-      <DotLottieReact
-        src={src}
-        loop
-        autoplay
-        dotLottieRefCallback={(dl) => {
-          if (!dl) return;
-          dl.addEventListener("loadError", () => setFailed(true));
-        }}
-      />
-    </div>
-  );
-}
 
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -179,7 +96,6 @@ export default function LandingPage() {
           <div className="hidden md:flex items-center gap-8 text-sm font-bold text-gray-500">
             <a href="#features" className="hover:text-violet-600 transition-colors">Возможности</a>
             <a href="#how" className="hover:text-violet-600 transition-colors">Как работает</a>
-            <a href="#reviews" className="hover:text-violet-600 transition-colors">Отзывы</a>
           </div>
 
           {/* CTA buttons */}
@@ -188,7 +104,7 @@ export default function LandingPage() {
               <button className="duo-btn-outline text-xs px-4 py-2.5">Войти</button>
             </Link>
             <Link to="/register">
-              <button className="duo-btn-green text-xs px-4 py-2.5">Начать бесплатно</button>
+              <button className="duo-btn text-xs px-4 py-2.5">Начать бесплатно</button>
             </Link>
           </div>
 
@@ -213,7 +129,7 @@ export default function LandingPage() {
                 <button className="duo-btn-outline text-xs w-full py-2.5">Войти</button>
               </Link>
               <Link to="/register" className="flex-1">
-                <button className="duo-btn-green text-xs w-full py-2.5">Регистрация</button>
+                <button className="duo-btn text-xs w-full py-2.5">Регистрация</button>
               </Link>
             </div>
           </div>
@@ -257,7 +173,7 @@ export default function LandingPage() {
 
               <div className="flex flex-wrap gap-4 mb-10">
                 <Link to="/register">
-                  <button className="duo-btn-green text-sm px-8 py-4 rounded-2xl">
+                  <button className="duo-btn text-sm px-8 py-4 rounded-2xl">
                     🚀 Попробовать бесплатно
                   </button>
                 </Link>
@@ -268,42 +184,64 @@ export default function LandingPage() {
                 </a>
               </div>
 
-              {/* Social proof */}
-              <div className="flex items-center gap-4">
-                <div className="flex -space-x-2">
-                  {["А","М","С","Д","Е"].map((c,i) => (
-                    <div key={i} className="w-9 h-9 rounded-full border-2 border-white flex items-center justify-center text-white text-xs font-extrabold"
-                      style={{ background: ["#7c3aed","#2563eb","#059669","#d97706","#db2777"][i] }}>
-                      {c}
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <div className="flex gap-0.5 mb-0.5">
-                    {[1,2,3,4,5].map(s => <span key={s} className="text-yellow-400 text-sm">★</span>)}
-                  </div>
-                  <p className="text-xs font-bold text-gray-500">Уже <strong className="text-gray-900">200+</strong> репетиторов на платформе</p>
-                </div>
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 bg-violet-50 border border-violet-200 text-violet-700 rounded-full px-4 py-2 text-sm font-semibold">
+                Бесплатно для репетиторов — без комиссий
               </div>
             </div>
 
-            {/* Lottie hero illustration */}
+            {/* App preview mockup */}
             <div className="lg:w-1/2 flex justify-center">
-              <div className="relative duo-bounce">
-                <LottieOrEmoji
-                  src={LOTTIE.hero}
-                  fallback="🎓"
-                  className="w-72 h-72 md:w-96 md:h-96"
-                />
-                {/* Floating achievement cards */}
-                <div className="absolute -left-8 top-12 duo-card px-3 py-2 flex items-center gap-2 text-sm font-extrabold text-orange-600 bg-orange-50 border-orange-200">
-                  <span className="text-lg flame-pulse">🔥</span> 7 дней стрик!
+              <div className="w-full max-w-md space-y-3">
+                {/* Карточка занятия */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-md p-4 flex items-center gap-4 duo-fade-up" style={{ animationDelay: "100ms" }}>
+                  <div className="w-12 h-12 rounded-xl bg-violet-100 flex flex-col items-center justify-center shrink-0">
+                    <span className="text-xs font-bold text-violet-600 leading-none">Сег</span>
+                    <span className="text-lg font-black text-violet-700 leading-none">14</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-gray-900 text-sm">Занятие по математике</p>
+                    <p className="text-xs text-gray-400">18:00 · 60 мин · Анна Ученица</p>
+                  </div>
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-violet-100 text-violet-700 shrink-0">Сегодня</span>
                 </div>
-                <div className="absolute -right-6 top-1/3 duo-card px-3 py-2 flex items-center gap-2 text-sm font-extrabold text-violet-700 bg-violet-50 border-violet-200">
-                  <span className="text-lg">⭐</span> +20 XP
+
+                {/* Карточка задания */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-md p-4 flex items-center gap-4 duo-fade-up" style={{ animationDelay: "200ms" }}>
+                  <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                    <span className="text-2xl">📝</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-gray-900 text-sm">Задание сдано на проверку</p>
+                    <p className="text-xs text-gray-400">Алгебра · Тема: уравнения</p>
+                  </div>
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-100 text-blue-700 shrink-0">На проверке</span>
                 </div>
-                <div className="absolute -left-4 bottom-16 duo-card px-3 py-2 flex items-center gap-2 text-sm font-extrabold text-green-700 bg-green-50 border-green-200">
-                  <span className="text-lg">✅</span> ДЗ сдано!
+
+                {/* Карточка оплаты */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-md p-4 flex items-center gap-4 duo-fade-up" style={{ animationDelay: "300ms" }}>
+                  <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                    <span className="text-2xl">💰</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-gray-900 text-sm">Оплата получена</p>
+                    <p className="text-xs text-gray-400">Занятие 14 мая · 2 500 ₽</p>
+                  </div>
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 shrink-0">Оплачено</span>
+                </div>
+
+                {/* Чат-превью */}
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-md p-4 duo-fade-up" style={{ animationDelay: "400ms" }}>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-8 h-8 rounded-full bg-violet-200 flex items-center justify-center text-violet-700 font-bold text-sm">А</div>
+                    <div>
+                      <p className="text-xs font-bold text-gray-700">Анна Ученица</p>
+                      <p className="text-[10px] text-gray-400">только что</p>
+                    </div>
+                  </div>
+                  <div className="bg-violet-50 rounded-xl px-3 py-2 text-xs text-violet-800 font-medium w-fit">
+                    Прикрепила решение задачи ✅
+                  </div>
                 </div>
               </div>
             </div>
@@ -314,16 +252,13 @@ export default function LandingPage() {
       {/* ── Stats bar ─────────────────────────────────────────────────────── */}
       <section className="bg-violet-600 py-10 border-y-2 border-violet-700">
         <div className="max-w-4xl mx-auto px-5">
-          <div className="grid grid-cols-3 gap-6 text-center text-white">
+          <div className="grid grid-cols-2 gap-6 text-center text-white max-w-xl mx-auto">
             {[
-              { to: 200, suffix: "+", label: "репетиторов" },
-              { to: 0, suffix: "₽", label: "комиссии с оплат" },
-              { to: 100, suffix: "%", label: "цифровой документооборот" },
+              { value: "0 ₽",  label: "комиссии с оплат" },
+              { value: "100%", label: "цифровой документооборот" },
             ].map((s) => (
               <div key={s.label}>
-                <p className="text-4xl font-black mb-1">
-                  <CountUp to={s.to} suffix={s.suffix} />
-                </p>
+                <p className="text-4xl font-black mb-1">{s.value}</p>
                 <p className="text-violet-200 text-sm font-bold uppercase tracking-wide">{s.label}</p>
               </div>
             ))}
@@ -358,101 +293,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Gamification showcase ─────────────────────────────────────────── */}
-      <section className="py-24 bg-white overflow-hidden">
-        <div className="max-w-6xl mx-auto px-5">
-          <div className="flex flex-col lg:flex-row items-center gap-16">
-            {/* Left: text */}
-            <RevealBlock className="lg:w-1/2">
-              <p className="text-sm font-extrabold uppercase tracking-widest text-green-500 mb-3">Геймификация</p>
-              <h2 className="text-4xl font-black text-gray-900 mb-5">
-                Учиться весело — <br />
-                <span className="text-violet-600">как в игре</span>
-              </h2>
-              <p className="text-gray-500 text-lg font-semibold mb-8 leading-relaxed">
-                Ученики зарабатывают XP за каждое выполненное задание, поддерживают стрики и открывают достижения. Это мотивирует учиться каждый день.
-              </p>
-              <div className="space-y-3">
-                {[
-                  { emoji: "🔥", color: "bg-orange-50 border-orange-200 text-orange-700", text: "Стрики — учись каждый день и не теряй огонь" },
-                  { emoji: "⭐", color: "bg-violet-50 border-violet-200 text-violet-700", text: "XP за задания — растёт уровень и открываются бейджи" },
-                  { emoji: "🏅", color: "bg-yellow-50 border-yellow-200 text-yellow-700", text: "Достижения — коллекционируй награды за успехи" },
-                ].map((item) => (
-                  <div key={item.text} className={`flex items-center gap-3 px-4 py-3 rounded-2xl border-2 ${item.color} font-bold text-sm`}>
-                    <span className="text-2xl">{item.emoji}</span>
-                    {item.text}
-                  </div>
-                ))}
-              </div>
-            </RevealBlock>
-
-            {/* Right: mock dashboard card */}
-            <RevealBlock className="lg:w-1/2" delay={200}>
-              <div className="duo-card p-6 max-w-sm mx-auto">
-                {/* Header */}
-                <div className="flex items-center justify-between mb-5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-violet-600 border-b-2 border-violet-700 flex items-center justify-center text-white text-lg font-black">М</div>
-                    <div>
-                      <p className="font-black text-gray-900">Максим</p>
-                      <p className="text-xs font-bold text-gray-400">Уровень 5 · Ученик</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    {[1,2,3].map(i => <span key={i} className="duo-heart">❤️</span>)}
-                    <span className="duo-heart-empty">🤍</span>
-                    <span className="duo-heart-empty">🤍</span>
-                  </div>
-                </div>
-
-                {/* Streak + XP */}
-                <div className="grid grid-cols-2 gap-3 mb-5">
-                  <div className="bg-orange-50 border-2 border-orange-200 rounded-2xl p-3 text-center">
-                    <span className="text-3xl flame-pulse block mb-1">🔥</span>
-                    <p className="font-black text-2xl text-orange-600 leading-none">14</p>
-                    <p className="text-xs font-bold text-orange-400 mt-0.5">дней стрик</p>
-                  </div>
-                  <div className="bg-violet-50 border-2 border-violet-200 rounded-2xl p-3 text-center">
-                    <span className="text-3xl block mb-1">⭐</span>
-                    <p className="font-black text-2xl text-violet-600 leading-none">420</p>
-                    <p className="text-xs font-bold text-violet-400 mt-0.5">очков XP</p>
-                  </div>
-                </div>
-
-                {/* XP Progress */}
-                <div className="mb-5">
-                  <div className="flex justify-between mb-1.5">
-                    <span className="text-xs font-extrabold text-gray-500">До уровня 6</span>
-                    <span className="text-xs font-extrabold text-violet-600">420 / 500 XP</span>
-                  </div>
-                  <div className="duo-progress">
-                    <div className="duo-progress-fill" style={{ width: "84%" }} />
-                  </div>
-                </div>
-
-                {/* Achievements */}
-                <div>
-                  <p className="text-sm font-extrabold text-gray-700 mb-2">🏅 Достижения</p>
-                  <div className="grid grid-cols-4 gap-2">
-                    {[
-                      { e: "🔥", l: "Стрик 7д", done: true },
-                      { e: "📚", l: "5 заданий", done: true },
-                      { e: "⭐", l: "100 XP", done: true },
-                      { e: "💎", l: "Стрик 30", done: false },
-                    ].map(a => (
-                      <div key={a.l} className={`rounded-xl border-2 p-2 text-center ${a.done ? "bg-violet-50 border-violet-200" : "bg-gray-50 border-gray-200 opacity-40"}`}>
-                        <span className="text-xl block">{a.e}</span>
-                        <span className="text-xs font-bold text-gray-500 leading-tight">{a.l}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </RevealBlock>
-          </div>
-        </div>
-      </section>
-
       {/* ── How it works ──────────────────────────────────────────────────── */}
       <section id="how" className="py-24 bg-gray-50">
         <div className="max-w-5xl mx-auto px-5">
@@ -481,42 +321,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Testimonials ──────────────────────────────────────────────────── */}
-      <section id="reviews" className="py-24 bg-white">
-        <div className="max-w-6xl mx-auto px-5">
-          <RevealBlock className="text-center mb-16">
-            <p className="text-sm font-extrabold uppercase tracking-widest text-green-500 mb-3">Отзывы</p>
-            <h2 className="text-4xl font-black text-gray-900">Репетиторы говорят</h2>
-          </RevealBlock>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {TESTIMONIALS.map((t, i) => (
-              <RevealBlock key={t.name} delay={i * 100}>
-                <div className="duo-card p-6 h-full flex flex-col">
-                  {/* Stars */}
-                  <div className="flex gap-0.5 mb-4">
-                    {[1,2,3,4,5].map(s => <span key={s} className="text-yellow-400 text-lg">★</span>)}
-                  </div>
-                  <p className="text-gray-700 font-semibold leading-relaxed mb-5 flex-1">
-                    «{t.text}»
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full ${t.color} border-b-2 border-opacity-50 flex items-center justify-center text-white font-black text-sm`}
-                      style={{ borderColor: "rgba(0,0,0,0.2)" }}>
-                      {t.avatar}
-                    </div>
-                    <div>
-                      <p className="font-extrabold text-gray-900 text-sm">{t.name}</p>
-                      <p className="text-xs font-bold text-gray-400">{t.role}</p>
-                    </div>
-                  </div>
-                </div>
-              </RevealBlock>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ── CTA ───────────────────────────────────────────────────────────── */}
       <section className="py-24 bg-violet-600 relative overflow-hidden">
         {/* Background decoration */}
@@ -535,12 +339,12 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/register">
-              <button className="duo-btn-yellow text-base px-10 py-4 rounded-2xl w-full sm:w-auto">
+              <button className="text-base font-extrabold px-10 py-4 rounded-2xl w-full sm:w-auto bg-white text-violet-700 border-b-4 border-violet-200 hover:bg-violet-50 transition-colors uppercase tracking-wide">
                 🚀 Создать аккаунт
               </button>
             </Link>
             <Link to="/login">
-              <button className="duo-btn-outline text-base px-10 py-4 rounded-2xl w-full sm:w-auto border-white/30 text-white hover:bg-white/10">
+              <button className="text-base font-extrabold px-10 py-4 rounded-2xl w-full sm:w-auto bg-transparent text-white border-2 border-white/60 hover:bg-white/10 transition-colors uppercase tracking-wide">
                 Войти
               </button>
             </Link>
@@ -560,7 +364,6 @@ export default function LandingPage() {
           <div className="flex items-center gap-6 text-sm font-bold text-gray-400">
             <a href="#features" className="hover:text-gray-700">Возможности</a>
             <a href="#how" className="hover:text-gray-700">Как работает</a>
-            <a href="#reviews" className="hover:text-gray-700">Отзывы</a>
           </div>
           <p className="text-sm font-bold text-gray-400">© 2026 TutorSpace</p>
         </div>

@@ -1,9 +1,9 @@
 import { useState } from "react";
+import { TUTOR_NAV } from "@/config/nav";
 import {
-  BookOpen, Plus, Calendar, BarChart3,
-  Users, MessageSquare, TrendingUp, Trash2,
-  ChevronRight, Clock, AlertCircle,
-} from "lucide-react";
+  BookOpen, Plus, Calendar,
+  Users, Trash2,
+  ChevronRight, Clock, AlertCircle } from "lucide-react";
 import { useAsync } from "@/hooks/useAsync";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { getAssignedHomework, deleteHomework } from "@/api/homework";
@@ -17,14 +17,6 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
-const NAV = [
-  { icon: BarChart3,     label: "Обзор",     href: "/dashboard/tutor" },
-  { icon: Calendar,      label: "Расписание", href: "/dashboard/tutor/schedule" },
-  { icon: BookOpen,      label: "Задания",    href: "/dashboard/tutor/homework" },
-  { icon: Users,         label: "Ученики",    href: "/dashboard/tutor/students" },
-  { icon: MessageSquare, label: "Чат",        href: "/dashboard/tutor/chat" },
-  { icon: TrendingUp,    label: "Финансы",    href: "/dashboard/tutor/payments" },
-];
 
 type Tab = "active" | "overdue" | "all";
 
@@ -74,48 +66,48 @@ export default function TutorHomeworkPage() {
     const lesson = (lessons.data ?? []).find((l) => l.id === hw.lesson_id);
     if (!lesson) return "";
     return new Date(lesson.date).toLocaleDateString("ru-RU", {
-      day: "numeric", month: "short",
-    });
+      day: "numeric", month: "short" });
   }
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar items={NAV} />
+      <Sidebar items={TUTOR_NAV} />
 
-      <main className="flex-1 flex overflow-hidden">
-        {/* Left: homework list */}
-        <div className={cn(
-          "flex flex-col border-r border-gray-100 bg-white transition-all",
-          selectedHw ? "w-[420px] shrink-0" : "flex-1"
-        )}>
-          {/* Header */}
-          <div className="px-6 py-5 border-b border-gray-100">
-            <div className="flex items-center justify-between mb-4">
-              <h1 className="text-xl font-bold text-gray-900">Задания</h1>
-              <Button onClick={() => setShowCreate(true)} className="gap-2" size="sm">
-                <Plus className="w-4 h-4" /> Новое
-              </Button>
+      <main className="flex-1 flex flex-col overflow-hidden">
+        {/* Топ-шапка — всегда полная ширина, кнопка всегда видна */}
+        <div className="shrink-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-6">
+            <h1 className="text-xl font-bold text-gray-900">Задания</h1>
+            <div className="flex items-center gap-4 text-sm">
+              <span className="flex items-center gap-1.5 text-violet-600 font-semibold">
+                <Clock className="w-4 h-4" />
+                {homeworks.loading ? "—" : activeCount} активных
+              </span>
+              {overdueCount > 0 && (
+                <span className="flex items-center gap-1.5 text-red-500 font-semibold">
+                  <AlertCircle className="w-4 h-4" />
+                  {overdueCount} просрочено
+                </span>
+              )}
             </div>
+          </div>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors shadow-sm shrink-0"
+          >
+            <Plus className="w-4 h-4" />
+            Новое задание
+          </button>
+        </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="flex items-center gap-2 p-3 bg-violet-50 rounded-xl">
-                <Clock className="w-4 h-4 text-primary" />
-                <div>
-                  <p className="text-xs text-gray-500">Активных</p>
-                  <p className="text-lg font-bold text-primary">{homeworks.loading ? "—" : activeCount}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 p-3 bg-red-50 rounded-xl">
-                <AlertCircle className="w-4 h-4 text-red-500" />
-                <div>
-                  <p className="text-xs text-gray-500">Просрочено</p>
-                  <p className="text-lg font-bold text-red-500">{homeworks.loading ? "—" : overdueCount}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Tabs */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Left: homework list */}
+          <div className={cn(
+            "flex flex-col border-r border-gray-100 bg-white transition-all duration-200",
+            selectedHw ? "w-[400px] shrink-0" : "flex-1"
+          )}>
+          {/* Sub-header: tabs */}
+          <div className="px-4 py-3 border-b border-gray-100">
             <div className="flex gap-1 p-1 bg-gray-100 rounded-xl">
               {([
                 { key: "active",  label: "Активные" },
@@ -126,7 +118,7 @@ export default function TutorHomeworkPage() {
                   key={key}
                   onClick={() => setTab(key)}
                   className={cn(
-                    "flex-1 py-2 text-sm font-medium rounded-lg transition-all",
+                    "flex-1 py-2 text-sm font-semibold rounded-lg transition-all",
                     tab === key ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
                   )}
                 >
@@ -205,8 +197,7 @@ export default function TutorHomeworkPage() {
                         <span className={cn("flex items-center gap-1", isOverdue ? "text-red-500 font-medium" : "")}>
                           <Clock className="w-3 h-3" />
                           {isOverdue ? "Просрочено" : deadline.toLocaleString("ru-RU", {
-                            day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
-                          })}
+                            day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                         </span>
                       </div>
                     </div>
@@ -233,16 +224,17 @@ export default function TutorHomeworkPage() {
           </div>
         </div>
 
-        {/* Right: answers panel */}
-        {selectedHw && (
-          <div className="flex-1 bg-white overflow-hidden flex flex-col">
-            <AnswersPanel
-              hw={selectedHw}
-              students={students.data ?? []}
-              onClose={() => setSelectedHw(null)}
-            />
-          </div>
-        )}
+          {/* Right: answers panel */}
+          {selectedHw && (
+            <div className="flex-1 bg-white overflow-hidden flex flex-col">
+              <AnswersPanel
+                hw={selectedHw}
+                students={students.data ?? []}
+                onClose={() => setSelectedHw(null)}
+              />
+            </div>
+          )}
+        </div>{/* end flex-1 flex overflow-hidden */}
       </main>
 
       {showCreate && (

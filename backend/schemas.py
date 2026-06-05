@@ -191,6 +191,44 @@ class AnswerOut(BaseModel):
     graded_at: Optional[datetime] = None
 
 
+# ── Available Slots ────────────────────────────────────────────────────────────
+
+class SlotCreate(BaseModel):
+    duration: int = Field(60, gt=0, description="Длительность в минутах")
+    is_recurring: bool = False
+    slot_date: Optional[datetime] = None
+    weekday: Optional[int] = Field(None, ge=0, le=6)
+    slot_hour: Optional[int] = Field(None, ge=0, le=23)
+    slot_minute: Optional[int] = Field(None, ge=0, le=59)
+    reserved_for_student_id: Optional[int] = None
+
+    @model_validator(mode="after")
+    def check_fields(self):
+        if self.is_recurring:
+            if self.weekday is None or self.slot_hour is None or self.slot_minute is None:
+                raise ValueError("Для регулярного слота нужны weekday, slot_hour, slot_minute")
+        else:
+            if self.slot_date is None:
+                raise ValueError("Для разового слота нужна slot_date")
+        return self
+
+
+class SlotOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    tutor_id: int
+    duration: int
+    is_recurring: bool
+    slot_date: Optional[datetime] = None
+    weekday: Optional[int] = None
+    slot_hour: Optional[int] = None
+    slot_minute: Optional[int] = None
+    reserved_for_student_id: Optional[int] = None
+    is_active: bool
+    created_at: datetime
+
+
 # ── Payments ───────────────────────────────────────────────────────────────────
 
 class PaymentRecord(BaseModel):

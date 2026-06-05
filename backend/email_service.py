@@ -34,7 +34,7 @@ if _mail_configured:
 else:
     _mailer = None
 
-FRONTEND_URL = os.getenv("VITE_API_URL", "http://localhost:5173").replace("8000", "5173")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 TOKEN_EXPIRE_HOURS = 24
 
 
