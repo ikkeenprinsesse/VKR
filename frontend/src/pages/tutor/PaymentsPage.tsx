@@ -2,7 +2,9 @@ import { useState } from "react";
 import { TUTOR_NAV } from "@/config/nav";
 import {
   TrendingUp, BarChart3, Plus, Loader2,
-  CheckCircle2, Clock, RefreshCw, ChevronDown } from "lucide-react";
+  CheckCircle2, Clock, RefreshCw, ChevronDown,
+  FileText, FileSpreadsheet } from "lucide-react";
+import { downloadFile } from "@/lib/download";
 import { useAsync } from "@/hooks/useAsync";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { getMyIncome, recordPayment, getPaymentAnalytics } from "@/api/payments";
@@ -10,6 +12,7 @@ import type { Payment } from "@/api/payments";
 import { getMySchedule } from "@/api/lessons";
 import { getMyStudents } from "@/api/users";
 import Sidebar from "@/components/Sidebar";
+import ErrorBanner from "@/components/ErrorBanner";
 import PaymentLinkButton from "@/components/PaymentLinkButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -129,6 +132,19 @@ export default function PaymentsPage() {
   const [showRecord, setShowRecord]       = useState(false);
   const [filterStudent, setFilterStudent] = useState<number | "all">("all");
   const [expanded, setExpanded]           = useState<number | null>(null);
+  const [exporting, setExporting]         = useState<"csv" | "pdf" | null>(null);
+
+  async function handleExport(format: "csv" | "pdf") {
+    setExporting(format);
+    try {
+      await downloadFile(
+        `/reports/income/${format}`,
+        `income_report.${format}`,
+      );
+    } finally {
+      setExporting(null);
+    }
+  }
 
   const allPayments = payments.data ?? [];
   const now = new Date();
@@ -168,15 +184,46 @@ export default function PaymentsPage() {
       <Sidebar items={TUTOR_NAV} />
 
       <main className="flex-1 overflow-y-auto">
+        {(payments.error || analytics.error) && (
+          <ErrorBanner
+            error={payments.error || analytics.error || ""}
+            onRetry={() => { payments.refetch(); analytics.refetch(); }}
+            className="m-6"
+          />
+        )}
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between">
+        <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between gap-3">
           <h1 className="text-xl font-bold text-gray-900">Финансы</h1>
-          <button
-            onClick={() => setShowRecord(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors shadow-sm shrink-0"
-          >
-            <Plus className="w-4 h-4" /> Записать оплату
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => handleExport("csv")}
+              disabled={!!exporting}
+              className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 text-gray-600 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
+              title="Скачать CSV"
+            >
+              {exporting === "csv"
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <FileSpreadsheet className="w-4 h-4 text-green-600" />}
+              CSV
+            </button>
+            <button
+              onClick={() => handleExport("pdf")}
+              disabled={!!exporting}
+              className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 text-gray-600 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
+              title="Скачать PDF"
+            >
+              {exporting === "pdf"
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <FileText className="w-4 h-4 text-red-500" />}
+              PDF
+            </button>
+            <button
+              onClick={() => setShowRecord(true)}
+              className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 text-white text-sm font-bold rounded-xl hover:bg-violet-700 transition-colors shadow-sm"
+            >
+              <Plus className="w-4 h-4" /> Записать оплату
+            </button>
+          </div>
         </div>
 
         <div className="p-8 space-y-6">

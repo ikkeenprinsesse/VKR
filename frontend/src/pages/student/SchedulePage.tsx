@@ -1,7 +1,8 @@
 import { useState } from "react";
 import {
   ChevronLeft, ChevronRight, Calendar,
-  LayoutGrid, List, Clock, Video, CalendarPlus, RefreshCw, Loader2 } from "lucide-react";
+  LayoutGrid, List, Clock, Video, CalendarPlus, RefreshCw, Loader2, Download } from "lucide-react";
+import { downloadFile } from "@/lib/download";
 import { useAsync } from "@/hooks/useAsync";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { getMySchedule } from "@/api/lessons";
@@ -9,6 +10,7 @@ import api from "@/api/client";
 import type { UserOut } from "@/api/auth";
 import { STUDENT_NAV } from "@/config/nav";
 import Sidebar from "@/components/Sidebar";
+import ErrorBanner from "@/components/ErrorBanner";
 import WeekView from "@/components/calendar/WeekView";
 import MonthView from "@/components/calendar/MonthView";
 import LessonCard from "@/components/LessonCard";
@@ -41,6 +43,16 @@ export default function StudentSchedulePage() {
   const [selected, setSelected] = useState<Lesson | null>(null);
   const [bookingId, setBookingId] = useState<number | null>(null);
   const [bookError, setBookError] = useState<string | null>(null);
+  const [exportingIcs, setExportingIcs] = useState(false);
+
+  async function handleExportIcs() {
+    setExportingIcs(true);
+    try {
+      await downloadFile("/calendar/export", "tutorspace_schedule.ics");
+    } finally {
+      setExportingIcs(false);
+    }
+  }
   const availableSlots = useAsync(getAvailableSlots);
 
   async function handleBook(slot: Slot) {
@@ -120,6 +132,13 @@ export default function StudentSchedulePage() {
       <Sidebar items={STUDENT_NAV} />
 
       <main className="flex-1 flex flex-col overflow-hidden">
+        {lessons.error && (
+          <ErrorBanner
+            error={lessons.error}
+            onRetry={() => { lessons.refetch(); availableSlots.refetch(); }}
+            className="m-4"
+          />
+        )}
         {/* Toolbar */}
         <div className="shrink-0 bg-white border-b border-gray-100 px-6 py-3 flex items-center gap-4">
           <div className="flex items-center gap-2">
@@ -154,6 +173,16 @@ export default function StudentSchedulePage() {
           )}
 
           <div className="flex-1" />
+
+          <button
+            onClick={handleExportIcs}
+            disabled={exportingIcs}
+            className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-600 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
+            title="Экспорт в календарь (.ics)"
+          >
+            {exportingIcs ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            .ics
+          </button>
 
           {/* View toggle */}
           <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-xl">

@@ -2,12 +2,14 @@ import { useState } from "react";
 import { TUTOR_NAV } from "@/config/nav";
 import {
   ChevronLeft, ChevronRight, Plus, Calendar,
-  LayoutGrid, List, Clock, Trash2, RefreshCw, Lock } from "lucide-react";
+  LayoutGrid, List, Clock, Trash2, RefreshCw, Lock, Download, Loader2 as Spin } from "lucide-react";
+import { downloadFile } from "@/lib/download";
 import { useAsync } from "@/hooks/useAsync";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { getMySchedule, updateLesson } from "@/api/lessons";
 import { getMyStudents } from "@/api/users";
 import Sidebar from "@/components/Sidebar";
+import ErrorBanner from "@/components/ErrorBanner";
 import WeekView from "@/components/calendar/WeekView";
 import MonthView from "@/components/calendar/MonthView";
 import CreateLessonModal from "@/components/CreateLessonModal";
@@ -47,6 +49,16 @@ export default function TutorSchedulePage() {
   const [createSlotDate, setCreateSlotDate] = useState<Date | null>(null);
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [showSlotModal, setShowSlotModal]   = useState(false);
+  const [exportingIcs, setExportingIcs]     = useState(false);
+
+  async function handleExportIcs() {
+    setExportingIcs(true);
+    try {
+      await downloadFile("/calendar/export", "tutorspace_schedule.ics");
+    } finally {
+      setExportingIcs(false);
+    }
+  }
   const slots = useAsync(getMySlots);
 
   // ── Navigation ─────────────────────────────────────────────────────────────
@@ -103,6 +115,13 @@ export default function TutorSchedulePage() {
       <Sidebar items={TUTOR_NAV} />
 
       <main className="flex-1 flex flex-col overflow-hidden">
+        {(lessons.error || students.error) && (
+          <ErrorBanner
+            error={lessons.error || students.error || ""}
+            onRetry={() => { lessons.refetch(); students.refetch(); }}
+            className="m-4"
+          />
+        )}
         {/* Верхняя строка: навигация по датам + кнопка — всегда видна */}
         <div className="shrink-0 bg-white border-b border-gray-100 px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
@@ -152,6 +171,15 @@ export default function TutorSchedulePage() {
               })}
             </div>
 
+            <button
+              onClick={handleExportIcs}
+              disabled={exportingIcs}
+              className="flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-200 text-gray-600 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
+              title="Экспорт в календарь (.ics)"
+            >
+              {exportingIcs ? <Spin className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              .ics
+            </button>
             <button
               onClick={() => setShowSlotModal(true)}
               className="flex items-center gap-2 px-3 py-2 bg-white border border-violet-300 text-violet-700 text-sm font-bold rounded-xl hover:bg-violet-50 transition-colors"
