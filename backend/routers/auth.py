@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Body
+from fastapi import APIRouter, Depends, HTTPException, status, Body, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -10,12 +10,15 @@ from ..security import (
     verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES,
     create_refresh_token, rotate_refresh_token, revoke_refresh_token,
 )
+from ..limiter import limiter
 
 router = APIRouter(tags=["auth"])
 
 
 @router.post("/token", response_model=TokenWithRefresh)
+@limiter.limit("5/minute")
 async def login_for_access_token(
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_db),
 ):

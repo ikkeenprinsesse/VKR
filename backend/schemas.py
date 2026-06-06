@@ -2,7 +2,7 @@
 from pydantic import BaseModel, EmailStr, Field, model_validator, ConfigDict
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Any
-from .models import Role, LessonStatus, AutoCheckType, AnswerStatus, PaymentStatus, HomeworkStatus
+from .models import Role, LessonStatus, AutoCheckType, AnswerStatus, PaymentStatus, HomeworkStatus, PlanType
 
 
 # ── Users ──────────────────────────────────────────────────────────────────────
@@ -357,3 +357,20 @@ class StudentProgressOut(BaseModel):
 
 class PaymentStatusUpdate(BaseModel):
     status: PaymentStatus
+
+
+# ── Subscription ───────────────────────────────────────────────────────────────
+
+class SubscriptionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    plan: PlanType
+    expires_at: Optional[datetime] = None
+    is_active: bool
+    days_left: Optional[int] = None
+
+
+class CheckoutResponse(BaseModel):
+    url: str
+    amount: float
+    plan: PlanType

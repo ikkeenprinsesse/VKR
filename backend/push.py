@@ -31,6 +31,22 @@ def _send_one(endpoint: str, p256dh: str, auth: str, payload: dict) -> None:
     )
 
 
+async def notify(
+    *,
+    user_id: int,
+    title: str,
+    body: str,
+    db: AsyncSession,
+    url: str = "/",
+    tag: Optional[str] = None,
+) -> None:
+    """Создать уведомление в БД и отправить push."""
+    from .models import Notification
+    db.add(Notification(user_id=user_id, title=title, body=body, url=url))
+    await db.flush()          # сохраняем, но не коммитим — коммит на вызывающей стороне
+    await send_push(user_id=user_id, title=title, body=body, db=db, url=url, tag=tag)
+
+
 async def send_push(
     *,
     user_id: int,

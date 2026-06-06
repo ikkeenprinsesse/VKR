@@ -9,7 +9,7 @@ from ..database import get_db
 from ..models import AvailableSlot, TutorStudentRelation, User, Role, Lesson, LessonStatus
 from ..schemas import SlotCreate, SlotOut, LessonOut
 from ..security import get_current_user
-from ..push import send_push
+from ..push import notify, send_push
 
 router = APIRouter(prefix="/slots", tags=["slots"])
 
@@ -88,7 +88,7 @@ async def create_slot(
             time_str = f"{WEEKDAYS_RU[data.weekday]}, {data.slot_hour:02d}:{data.slot_minute:02d}"
         else:
             time_str = data.slot_date.strftime("%d.%m %H:%M")
-        await send_push(
+        await notify(
             user_id=data.reserved_for_student_id,
             title="Для вас закреплён слот",
             body=f"Репетитор зарезервировал время: {time_str}",
@@ -214,7 +214,7 @@ async def book_slot(
     await db.refresh(lesson)
 
     # Уведомить репетитора
-    await send_push(
+    await notify(
         user_id=slot.tutor_id,
         title="Ученик записался на занятие",
         body=f"{lesson_date.strftime('%d.%m %H:%M')} — {slot.duration} мин",

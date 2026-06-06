@@ -15,3 +15,4 @@ fastapi-mail==1.4.1
 apscheduler
 icalendar
 fpdf2
+slowapi

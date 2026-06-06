@@ -44,6 +44,7 @@ services:
       VAPID_CLAIMS_EMAIL: ${VAPID_CLAIMS_EMAIL:-admin@tutorspace.local}
       UPLOAD_DIR: /app/uploads
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      PLATFORM_YOOMONEY_WALLET: ${PLATFORM_YOOMONEY_WALLET:-}
     depends_on:
       db:
         condition: service_healthy

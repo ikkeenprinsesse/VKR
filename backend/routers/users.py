@@ -63,8 +63,23 @@ async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
     # 4. Отправляем письмо верификации
     await send_verification_email(db_user, db)
 
-    # 5. Если это студент и есть tutor_id — создаём связь
+    # 5. Если это студент и есть tutor_id — проверяем лимит и создаём связь
     if db_user.role == "student" and tutor_id:
+        from ..routers.subscriptions import get_or_create_subscription, FREE_STUDENT_LIMIT, _is_active
+        from ..models import PlanType
+        sub = await get_or_create_subscription(db, tutor_id)
+        if sub.plan == PlanType.free or not _is_active(sub):
+            count_res = await db.execute(
+                select(TutorStudentRelation).where(TutorStudentRelation.tutor_id == tutor_id)
+            )
+            count = len(count_res.scalars().all())
+            if count >= FREE_STUDENT_LIMIT:
+                raise HTTPException(
+                    status_code=402,
+                    detail=f"Бесплатный тариф — максимум {FREE_STUDENT_LIMIT} ученика. "
+                           "Перейдите на PRO для неограниченного числа учеников.",
+                )
+
         relation = TutorStudentRelation(
             tutor_id=tutor_id,
             student_id=db_user.id

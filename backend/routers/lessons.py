@@ -10,7 +10,8 @@ from ..models import Lesson, LessonStatus, TutorStudentRelation, User, Role
 from ..schemas import LessonCreate, LessonUpdate, LessonOut
 from ..security import get_current_user
 from ..audit import log_action
-from ..push import send_push
+from ..push import notify, send_push
+from ..email_service import notify_new_lesson
 
 router = APIRouter(prefix="/lessons", tags=["lessons"])
 
@@ -134,9 +135,9 @@ async def create_lesson(
     await db.commit()
     await db.refresh(lesson)
 
-    # уведомление ученику о новом занятии
+    # уведомления ученику о новом занятии (push + email)
     date_str = lesson.date.strftime("%d.%m %H:%M")
-    await send_push(
+    await notify(
         user_id=lesson.student_id,
         title="Новое занятие запланировано",
         body=f"{lesson.topic or 'Занятие'} — {date_str}",
@@ -144,6 +145,16 @@ async def create_lesson(
         tag="lesson-new",
         db=db,
     )
+    student_res = await db.execute(select(User).where(User.id == lesson.student_id))
+    student = student_res.scalar_one_or_none()
+    if student:
+        notify_new_lesson(
+            student=student,
+            lesson_date=lesson.date,
+            topic=lesson.topic,
+            duration=lesson.duration,
+            tutor_name=current_user.name,
+        )
 
     return lesson
 

@@ -1,19 +1,38 @@
 # backend/routers/payments.py
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func
+from sqlalchemy import select, and_, func, cast
+from sqlalchemy import Numeric
 from datetime import datetime, timezone
 from typing import List
-from collections import defaultdict
 
 from ..database import get_db
 from ..models import Payment, PaymentStatus, Lesson, User, Role
 from ..schemas import PaymentRecord, PaymentOut, PaymentAnalyticsItem, PaymentStatusUpdate
 from ..security import get_current_user
 from ..audit import log_action
-from ..push import send_push
+from ..push import notify, send_push
 
 router = APIRouter(prefix="/payments", tags=["payments"])
+
+
+@router.get("/my-expenses", response_model=List[PaymentOut])
+async def my_expenses(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Платежи за занятия текущего ученика."""
+    if current_user.role != Role.student:
+        raise HTTPException(status_code=403, detail="Только ученик может просматривать свои расходы")
+
+    stmt = (
+        select(Payment)
+        .join(Lesson, Payment.lesson_id == Lesson.id)
+        .where(Lesson.student_id == current_user.id)
+        .order_by(Payment.created_at.desc())
+    )
+    result = await db.execute(stmt)
+    return result.scalars().all()
 
 
 @router.get("/my-income", response_model=List[PaymentOut])
@@ -112,7 +131,7 @@ async def update_payment_status(
         labels = {PaymentStatus.paid: "Оплачено", PaymentStatus.refunded: "Возврат средств"}
         label = labels.get(data.status)
         if label:
-            await send_push(
+            await notify(
                 user_id=lesson.student_id,
                 title="Статус оплаты изменён",
                 body=f"{label}: {payment.amount} {payment.currency}",
@@ -166,8 +185,16 @@ async def payment_analytics(
     if current_user.role != Role.tutor:
         raise HTTPException(status_code=403, detail="Только репетитор может просматривать аналитику")
 
+    # Агрегация прямо на БД — один запрос вместо загрузки всех строк в память
+    date_col = func.coalesce(Payment.payment_date, Payment.created_at)
+    period_col = func.to_char(date_col, "YYYY-MM").label("period")
+
     stmt = (
-        select(Payment)
+        select(
+            period_col,
+            func.round(cast(func.sum(Payment.amount), Numeric(12, 2)), 2).label("total"),
+            func.count(Payment.id).label("count"),
+        )
         .join(Lesson, Payment.lesson_id == Lesson.id)
         .where(
             and_(
@@ -175,20 +202,12 @@ async def payment_analytics(
                 Payment.status == PaymentStatus.paid,
             )
         )
+        .group_by(period_col)
+        .order_by(period_col)
     )
+
     result = await db.execute(stmt)
-    payments = result.scalars().all()
-
-    monthly: dict[str, dict] = defaultdict(lambda: {"total": 0.0, "count": 0})
-    for p in payments:
-        pd = p.payment_date or p.created_at
-        if pd.tzinfo is None:
-            pd = pd.replace(tzinfo=timezone.utc)
-        key = pd.strftime("%Y-%m")
-        monthly[key]["total"] += p.amount
-        monthly[key]["count"] += 1
-
     return [
-        PaymentAnalyticsItem(period=k, total=round(v["total"], 2), count=v["count"])
-        for k, v in sorted(monthly.items())
+        PaymentAnalyticsItem(period=row.period, total=row.total or 0.0, count=row.count)
+        for row in result.all()
     ]

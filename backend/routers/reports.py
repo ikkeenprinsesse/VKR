@@ -2,13 +2,12 @@
 import csv
 import io
 from datetime import datetime, timezone
-from collections import defaultdict
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response, StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func, cast, Numeric
 
 from fpdf import FPDF
 
@@ -48,22 +47,52 @@ async def _fetch_payments(
     return result.scalars().all()
 
 
-def _build_monthly_summary(payments: list[Payment]) -> list[dict]:
-    monthly: dict[str, dict] = defaultdict(lambda: {"total": 0.0, "count": 0})
-    for p in payments:
-        pd = p.payment_date or p.created_at
-        if pd.tzinfo is None:
-            pd = pd.replace(tzinfo=timezone.utc)
-        key = pd.strftime("%Y-%m")
-        monthly[key]["total"] += p.amount
-        monthly[key]["count"] += 1
-    return [
-        {"period": k, "total": round(v["total"], 2), "count": v["count"]}
-        for k, v in sorted(monthly.items())
-    ]
+async def _monthly_summary_db(
+    db: AsyncSession,
+    tutor_id: int,
+    date_from: Optional[datetime],
+    date_to: Optional[datetime],
+) -> list[dict]:
+    """Месячная сводка через GROUP BY на БД — O(1) по памяти."""
+    date_col = func.coalesce(Payment.payment_date, Payment.created_at)
+    period_col = func.to_char(date_col, "YYYY-MM").label("period")
+
+    stmt = (
+        select(
+            period_col,
+            func.round(cast(func.sum(Payment.amount), Numeric(12, 2)), 2).label("total"),
+            func.count(Payment.id).label("count"),
+        )
+        .join(Lesson, Payment.lesson_id == Lesson.id)
+        .where(and_(Lesson.tutor_id == tutor_id, Payment.status == PaymentStatus.paid))
+        .group_by(period_col)
+        .order_by(period_col)
+    )
+    if date_from:
+        if date_from.tzinfo is None:
+            date_from = date_from.replace(tzinfo=timezone.utc)
+        stmt = stmt.where(Payment.payment_date >= date_from)
+    if date_to:
+        if date_to.tzinfo is None:
+            date_to = date_to.replace(tzinfo=timezone.utc)
+        stmt = stmt.where(Payment.payment_date <= date_to)
+
+    result = await db.execute(stmt)
+    return [{"period": r.period, "total": r.total or 0.0, "count": r.count} for r in result.all()]
 
 
 # ── CSV ────────────────────────────────────────────────────────────────────────
+
+async def _require_pro_reports(db: AsyncSession, current_user: User) -> None:
+    from ..routers.subscriptions import get_or_create_subscription, _is_active
+    from ..models import PlanType
+    sub = await get_or_create_subscription(db, current_user.id)
+    if sub.plan == PlanType.free or not _is_active(sub):
+        raise HTTPException(
+            status_code=402,
+            detail="Экспорт отчётов доступен только на тарифе PRO.",
+        )
+
 
 @router.get("/income/csv")
 async def income_csv(
@@ -74,6 +103,7 @@ async def income_csv(
 ):
     if current_user.role != Role.tutor:
         raise HTTPException(status_code=403, detail="Только репетитор может получать отчёты")
+    await _require_pro_reports(db, current_user)
 
     payments = await _fetch_payments(db, current_user.id, date_from, date_to)
 
@@ -127,9 +157,10 @@ async def income_pdf(
 ):
     if current_user.role != Role.tutor:
         raise HTTPException(status_code=403, detail="Только репетитор может получать отчёты")
+    await _require_pro_reports(db, current_user)
 
     payments = await _fetch_payments(db, current_user.id, date_from, date_to)
-    summary = _build_monthly_summary(payments)
+    summary = await _monthly_summary_db(db, current_user.id, date_from, date_to)
 
     pdf = _ReportPDF()
     pdf.add_page()

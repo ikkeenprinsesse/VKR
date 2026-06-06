@@ -11,7 +11,8 @@ from ..models import Answer, AnswerStatus, Homework, HomeworkStatus, Lesson, Aut
 from ..schemas import AnswerSubmit, AnswerGrade, AnswerOut
 from ..security import get_current_user
 from ..audit import log_action
-from ..push import send_push
+from ..push import notify, send_push
+from ..email_service import notify_homework_graded
 from typing import Optional
 router = APIRouter(prefix="/answers", tags=["answers"])
 
@@ -134,7 +135,7 @@ async def submit_answer(
     lesson_res = await db.execute(select(Lesson).where(Lesson.id == hw.lesson_id))
     lesson = lesson_res.scalar_one_or_none()
     if lesson:
-        await send_push(
+        await notify(
             user_id=lesson.tutor_id,
             title="Ученик сдал ответ",
             body=f"Задание: {hw.description[:60]}",
@@ -224,8 +225,8 @@ async def grade_answer(
     await db.commit()
     await db.refresh(answer)
 
-    # уведомление ученику об оценке
-    await send_push(
+    # уведомление ученику об оценке (push + email)
+    await notify(
         user_id=answer.student_id,
         title="Задание проверено",
         body=f"Оценка: {data.score}/{hw.max_score}",
@@ -233,5 +234,15 @@ async def grade_answer(
         tag="answer-graded",
         db=db,
     )
+    student_res = await db.execute(select(User).where(User.id == answer.student_id))
+    student = student_res.scalar_one_or_none()
+    if student:
+        notify_homework_graded(
+            student=student,
+            description=hw.description,
+            score=data.score,
+            max_score=hw.max_score,
+            comment=data.comment,
+        )
 
     return answer

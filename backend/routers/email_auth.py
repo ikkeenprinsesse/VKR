@@ -1,7 +1,8 @@
 # backend/routers/email_auth.py
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.ext.asyncio import AsyncSession
+from ..limiter import limiter
 from sqlalchemy import select
 
 from ..database import get_db
@@ -60,7 +61,9 @@ async def verify_email(
 # ── Сброс пароля ───────────────────────────────────────────────────────────────
 
 @router.post("/auth/forgot-password", status_code=202)
+@limiter.limit("3/minute")
 async def forgot_password(
+    request: Request,
     body: PasswordResetRequest,
     db: AsyncSession = Depends(get_db),
 ):

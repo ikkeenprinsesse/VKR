@@ -9,7 +9,8 @@ from ..models import Homework, HomeworkStatus, Lesson, TutorStudentRelation, Use
 from ..schemas import HomeworkCreate, HomeworkUpdate, HomeworkOut
 from ..security import get_current_user
 from ..audit import log_action
-from ..push import send_push
+from ..push import notify, send_push
+from ..email_service import notify_homework_assigned
 
 router = APIRouter(prefix="/homework", tags=["homework"])
 
@@ -72,11 +73,11 @@ async def create_homework(
     await db.commit()
     await db.refresh(hw)
 
-    # уведомление ученику
+    # уведомление ученику (push + email)
     lesson_res = await db.execute(select(Lesson).where(Lesson.id == hw.lesson_id))
     lesson = lesson_res.scalar_one_or_none()
     if lesson:
-        await send_push(
+        await notify(
             user_id=lesson.student_id,
             title="Новое задание",
             body=hw.description[:80],
@@ -84,6 +85,15 @@ async def create_homework(
             tag="homework-new",
             db=db,
         )
+        student_res = await db.execute(select(User).where(User.id == lesson.student_id))
+        student = student_res.scalar_one_or_none()
+        if student:
+            notify_homework_assigned(
+                student=student,
+                description=hw.description,
+                deadline=hw.deadline,
+                tutor_name=current_user.name,
+            )
 
     return hw
 

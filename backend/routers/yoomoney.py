@@ -24,6 +24,7 @@ from pydantic import BaseModel
 from ..database import get_db
 from ..models import Lesson, Payment, PaymentStatus, User, Role
 from ..security import get_current_user
+import os
 
 router = APIRouter(prefix="/yoomoney", tags=["yoomoney"])
 
@@ -159,6 +160,22 @@ async def yoomoney_webhook(
     Принимает уведомление об оплате от ЮMoney.
     Документация: https://yoomoney.ru/docs/payment-buttons/using-api/notifications
     """
+    # Обработка платежа за подписку
+    if label.startswith("subscription_"):
+        # label = subscription_{plan}_{tutor_id}
+        parts = label.split("_", 2)
+        if len(parts) == 3:
+            plan_key = parts[1]
+            try:
+                tutor_id = int(parts[2])
+            except ValueError:
+                return JSONResponse({"ok": True})
+
+            from ..routers.subscriptions import _activate_subscription, PLANS
+            if plan_key in PLANS:
+                await _activate_subscription(db, tutor_id, plan_key)
+        return JSONResponse({"ok": True})
+
     if not label.startswith("lesson_"):
         # Не наш платёж
         return JSONResponse({"ok": True})

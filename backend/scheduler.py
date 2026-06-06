@@ -8,7 +8,9 @@ from sqlalchemy import select, and_
 
 from .database import SessionLocal
 from .models import Homework, HomeworkStatus, Lesson
-from .push import send_push
+from .push import notify, send_push
+from .email_service import notify_deadline_reminder
+from .models import User
 
 logger = logging.getLogger(__name__)
 
@@ -40,10 +42,14 @@ async def _send_deadline_reminders() -> None:
             if not lesson:
                 continue
 
+            # Загружаем студента один раз для email
+            student_res = await db.execute(select(User).where(User.id == lesson.student_id))
+            student = student_res.scalar_one_or_none()
+
             # Напоминание за 24 часа (окно: от 25ч до 23ч)
             if not hw.notified_24h and timedelta(hours=23) <= time_left <= timedelta(hours=25):
                 try:
-                    await send_push(
+                    await notify(
                         user_id=lesson.student_id,
                         title="Дедлайн через 24 часа",
                         body=hw.description[:80],
@@ -51,6 +57,8 @@ async def _send_deadline_reminders() -> None:
                         tag=f"deadline-24h-{hw.id}",
                         db=db,
                     )
+                    if student:
+                        notify_deadline_reminder(student, hw.description, hours_left=24)
                     hw.notified_24h = True
                     logger.info("Sent 24h reminder for homework %s to student %s", hw.id, lesson.student_id)
                 except Exception as e:
@@ -59,7 +67,7 @@ async def _send_deadline_reminders() -> None:
             # Напоминание за 1 час (окно: от 75 мин до 45 мин)
             if not hw.notified_1h and timedelta(minutes=45) <= time_left <= timedelta(minutes=75):
                 try:
-                    await send_push(
+                    await notify(
                         user_id=lesson.student_id,
                         title="Дедлайн через 1 час!",
                         body=hw.description[:80],
@@ -67,6 +75,8 @@ async def _send_deadline_reminders() -> None:
                         tag=f"deadline-1h-{hw.id}",
                         db=db,
                     )
+                    if student:
+                        notify_deadline_reminder(student, hw.description, hours_left=1)
                     hw.notified_1h = True
                     logger.info("Sent 1h reminder for homework %s to student %s", hw.id, lesson.student_id)
                 except Exception as e:

@@ -15,6 +15,12 @@ class Role(str, enum.Enum):
     admin = "admin"
 
 
+class PlanType(str, enum.Enum):
+    free = "free"
+    pro_monthly = "pro_monthly"
+    pro_annual = "pro_annual"
+
+
 class LessonStatus(str, enum.Enum):
     planned = "planned"
     confirmed = "confirmed"
@@ -65,7 +71,6 @@ class User(Base):
     subjects = Column(Text, nullable=True)
     level = Column(String, nullable=True)
     photo = Column(String, nullable=True)
-    rating = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -97,6 +102,7 @@ class User(Base):
     forum_threads = relationship("ForumThread", back_populates="tutor")
     forum_posts = relationship("ForumPost", back_populates="user")
     answers = relationship("Answer", back_populates="student")
+    subscription = relationship("Subscription", back_populates="tutor", uselist=False)
 
 
 class TutorStudentRelation(Base):
@@ -162,7 +168,6 @@ class Homework(Base):
 
     lesson = relationship("Lesson", back_populates="homeworks")
     answers = relationship("Answer", back_populates="homework")
-    forum_threads = relationship("ForumThread", back_populates="homework")
 
 
 class Answer(Base):
@@ -218,14 +223,13 @@ class ForumThread(Base):
     __tablename__ = "forum_threads"
 
     id = Column(Integer, primary_key=True, index=True)
-    homework_id = Column(Integer, ForeignKey("homeworks.id"), nullable=True)
     title = Column(String, nullable=False)
+    tag = Column(String, nullable=True)
     tutor_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     tutor = relationship("User", back_populates="forum_threads")
-    homework = relationship("Homework", back_populates="forum_threads")
-    posts = relationship("ForumPost", back_populates="thread")
+    posts = relationship("ForumPost", back_populates="thread", lazy="dynamic")
 
 
 class ForumPost(Base):
@@ -251,6 +255,35 @@ class RefreshToken(Base):
     token = Column(String, unique=True, nullable=False, index=True)
     expires_at = Column(DateTime(timezone=True), nullable=False)
     revoked = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User")
+
+
+class Subscription(Base):
+    """Подписка репетитора на платформу."""
+    __tablename__ = "subscriptions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tutor_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False)
+    plan = Column(Enum(PlanType), default=PlanType.free, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=True)  # null = free
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    tutor = relationship("User", back_populates="subscription")
+
+
+class Notification(Base):
+    """Уведомления пользователей внутри платформы."""
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    title = Column(String, nullable=False)
+    body = Column(Text, nullable=True)
+    url = Column(String, nullable=True)        # куда вести при клике
+    is_read = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User")
