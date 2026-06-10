@@ -27,6 +27,11 @@ export interface PaymentAnalyticsItem {
   count: number;
 }
 
+export async function getMyExpenses(): Promise<Payment[]> {
+  const res = await api.get<Payment[]>("/payments/my-expenses");
+  return res.data;
+}
+
 export async function getMyIncome(): Promise<Payment[]> {
   const res = await api.get<Payment[]>("/payments/my-income");
   return res.data;

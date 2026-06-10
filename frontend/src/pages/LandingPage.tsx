@@ -96,6 +96,7 @@ export default function LandingPage() {
           <div className="hidden md:flex items-center gap-8 text-sm font-bold text-gray-500">
             <a href="#features" className="hover:text-violet-600 transition-colors">Возможности</a>
             <a href="#how" className="hover:text-violet-600 transition-colors">Как работает</a>
+            <a href="#pricing" className="hover:text-violet-600 transition-colors">Тарифы</a>
           </div>
 
           {/* CTA buttons */}
@@ -124,6 +125,7 @@ export default function LandingPage() {
           <div className="md:hidden border-t-2 border-gray-100 px-5 py-4 space-y-3 bg-white">
             <a href="#features" className="block font-bold text-gray-600 hover:text-violet-600 py-1">Возможности</a>
             <a href="#how" className="block font-bold text-gray-600 hover:text-violet-600 py-1">Как работает</a>
+            <a href="#pricing" className="block font-bold text-gray-600 hover:text-violet-600 py-1">Тарифы</a>
             <div className="flex gap-3 pt-2">
               <Link to="/login" className="flex-1">
                 <button className="duo-btn-outline text-xs w-full py-2.5">Войти</button>
@@ -321,6 +323,130 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Pricing ───────────────────────────────────────────────────────── */}
+      <section id="pricing" className="py-24 bg-white">
+        <div className="max-w-6xl mx-auto px-5">
+          <RevealBlock className="text-center mb-16">
+            <p className="text-sm font-extrabold uppercase tracking-widest text-violet-500 mb-3">Тарифы</p>
+            <h2 className="text-4xl font-black text-gray-900 mb-4">Прозрачные цены</h2>
+            <p className="text-gray-500 text-lg max-w-xl mx-auto font-semibold">
+              Начните бесплатно — переходите на PRO когда готовы.
+            </p>
+          </RevealBlock>
+
+          <div className="grid md:grid-cols-3 gap-6">
+
+            {/* Free */}
+            <RevealBlock delay={0}>
+              <div className="duo-card p-7 border-2 border-gray-200 h-full flex flex-col">
+                <p className="text-xs font-extrabold uppercase tracking-widest text-gray-400 mb-3">Бесплатно</p>
+                <div className="flex items-end gap-1 mb-1">
+                  <span className="text-5xl font-black text-gray-900">0 ₽</span>
+                </div>
+                <p className="text-sm text-gray-400 font-semibold mb-6">навсегда</p>
+                <ul className="space-y-3 flex-1 mb-8">
+                  {[
+                    "До 3 учеников",
+                    "Расписание и ДЗ",
+                    "Чат и файлы",
+                    "Базовые уведомления",
+                  ].map(f => (
+                    <li key={f} className="flex items-center gap-2.5 text-sm text-gray-600 font-semibold">
+                      <span className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 shrink-0 text-xs">✓</span>
+                      {f}
+                    </li>
+                  ))}
+                  {[
+                    "Финансовая аналитика",
+                    "Экспорт отчётов",
+                  ].map(f => (
+                    <li key={f} className="flex items-center gap-2.5 text-sm text-gray-300 font-semibold">
+                      <span className="w-5 h-5 rounded-full bg-gray-50 flex items-center justify-center text-gray-300 shrink-0 text-xs">✗</span>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link to="/register">
+                  <button className="duo-btn-outline w-full py-3 text-sm font-extrabold">
+                    Начать бесплатно
+                  </button>
+                </Link>
+              </div>
+            </RevealBlock>
+
+            {/* PRO monthly — highlighted */}
+            <RevealBlock delay={100}>
+              <div className="duo-card p-7 border-2 border-violet-500 h-full flex flex-col relative overflow-hidden shadow-lg">
+                <div className="absolute top-4 right-4 bg-violet-600 text-white text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wide">
+                  Популярный
+                </div>
+                <p className="text-xs font-extrabold uppercase tracking-widest text-violet-500 mb-3">PRO</p>
+                <div className="flex items-end gap-1 mb-1">
+                  <span className="text-5xl font-black text-gray-900">490 ₽</span>
+                </div>
+                <p className="text-sm text-gray-400 font-semibold mb-6">в месяц</p>
+                <ul className="space-y-3 flex-1 mb-8">
+                  {[
+                    "Неограниченно учеников",
+                    "Все модули платформы",
+                    "Финансовая аналитика",
+                    "Экспорт CSV и PDF",
+                    "Экспорт расписания .ics",
+                    "Форум репетиторов",
+                    "Push-уведомления",
+                  ].map(f => (
+                    <li key={f} className="flex items-center gap-2.5 text-sm text-gray-700 font-semibold">
+                      <span className="w-5 h-5 rounded-full bg-violet-100 flex items-center justify-center text-violet-600 shrink-0 text-xs">✓</span>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link to="/register">
+                  <button className="duo-btn w-full py-3 text-sm font-extrabold">
+                    Попробовать 14 дней бесплатно
+                  </button>
+                </Link>
+              </div>
+            </RevealBlock>
+
+            {/* Annual / B2B */}
+            <RevealBlock delay={200}>
+              <div className="duo-card p-7 border-2 border-gray-200 h-full flex flex-col gap-6">
+
+                {/* Annual */}
+                <div className="flex-1">
+                  <p className="text-xs font-extrabold uppercase tracking-widest text-emerald-500 mb-3">PRO Годовой</p>
+                  <div className="flex items-end gap-2 mb-1">
+                    <span className="text-4xl font-black text-gray-900">4 490 ₽</span>
+                  </div>
+                  <p className="text-sm text-gray-400 font-semibold mb-1">в год</p>
+                  <div className="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full px-3 py-1 text-xs font-extrabold mb-4">
+                    🎉 Экономия 2 месяца
+                  </div>
+                  <p className="text-sm text-gray-500 font-semibold">Всё из PRO — выгоднее при оплате за год.</p>
+                </div>
+
+                <div className="border-t border-gray-100 pt-5">
+                  <p className="text-xs font-extrabold uppercase tracking-widest text-blue-500 mb-3">B2B Центр</p>
+                  <div className="flex items-end gap-2 mb-1">
+                    <span className="text-3xl font-black text-gray-900">от 2 500 ₽</span>
+                  </div>
+                  <p className="text-sm text-gray-400 font-semibold mb-2">в месяц</p>
+                  <p className="text-sm text-gray-500 font-semibold">До 10 преподавателей. Для репетиторских центров и школ.</p>
+                </div>
+
+                <a href="mailto:hello@tutorspace.ru">
+                  <button className="duo-btn-outline w-full py-3 text-sm font-extrabold">
+                    Связаться с нами
+                  </button>
+                </a>
+              </div>
+            </RevealBlock>
+
+          </div>
+        </div>
+      </section>
+
       {/* ── CTA ───────────────────────────────────────────────────────────── */}
       <section className="py-24 bg-violet-600 relative overflow-hidden">
         {/* Background decoration */}
@@ -364,6 +490,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-6 text-sm font-bold text-gray-400">
             <a href="#features" className="hover:text-gray-700">Возможности</a>
             <a href="#how" className="hover:text-gray-700">Как работает</a>
+            <a href="#pricing" className="hover:text-gray-700">Тарифы</a>
           </div>
           <p className="text-sm font-bold text-gray-400">© 2026 TutorSpace</p>
         </div>
