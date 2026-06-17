@@ -11,6 +11,7 @@ import type { Homework } from "@/api/homework";
 import { getMySchedule } from "@/api/lessons";
 import { getMyStudents } from "@/api/users";
 import Sidebar from "@/components/Sidebar";
+import ErrorBanner from "@/components/ErrorBanner";
 import CreateHomeworkModal from "@/components/CreateHomeworkModal";
 import AnswersPanel from "@/components/AnswersPanel";
 import { Button } from "@/components/ui/button";
@@ -73,7 +74,14 @@ export default function TutorHomeworkPage() {
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar items={TUTOR_NAV} />
 
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden pt-16 lg:pt-0">
+        {(homeworks.error || lessons.error) && (
+          <ErrorBanner
+            error={homeworks.error || lessons.error || ""}
+            onRetry={() => { homeworks.refetch(); lessons.refetch(); }}
+            className="m-4"
+          />
+        )}
         {/* Топ-шапка — всегда полная ширина, кнопка всегда видна */}
         <div className="shrink-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-6">
@@ -101,10 +109,10 @@ export default function TutorHomeworkPage() {
         </div>
 
         <div className="flex-1 flex overflow-hidden">
-          {/* Left: homework list */}
+          {/* Left: homework list — на мобильном скрываем если выбрано ДЗ */}
           <div className={cn(
             "flex flex-col border-r border-gray-100 bg-white transition-all duration-200",
-            selectedHw ? "w-[400px] shrink-0" : "flex-1"
+            selectedHw ? "hidden md:flex md:w-[400px] md:shrink-0" : "flex-1"
           )}>
           {/* Sub-header: tabs */}
           <div className="px-4 py-3 border-b border-gray-100">
@@ -224,7 +232,7 @@ export default function TutorHomeworkPage() {
           </div>
         </div>
 
-          {/* Right: answers panel */}
+          {/* Right: answers panel — на мобильном занимает весь экран */}
           {selectedHw && (
             <div className="flex-1 bg-white overflow-hidden flex flex-col">
               <AnswersPanel

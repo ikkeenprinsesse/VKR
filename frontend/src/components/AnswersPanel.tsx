@@ -24,7 +24,7 @@ function GradeForm({ answer, maxScore, onGraded }: { answer: Answer; maxScore: n
   const [error,   setError]   = useState<string | null>(null);
   const [editing, setEditing] = useState(answer.status !== "graded");
 
-  async function handleGrade(e: React.FormEvent) {
+  async function handleGrade(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setLoading(true);

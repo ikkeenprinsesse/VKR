@@ -27,7 +27,7 @@ export default function CreateSlotModal({ students, onClose, onCreated }: Props)
 
   const minDate = new Date(Date.now() + 30 * 60 * 1000).toISOString().slice(0, 16);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setLoading(true);

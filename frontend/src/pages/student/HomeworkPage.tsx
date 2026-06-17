@@ -6,6 +6,7 @@ import { getAssignedHomework, getMyAnswers } from "@/api/homework";
 import type { Homework, Answer, HWFile } from "@/api/homework";
 import { STUDENT_NAV } from "@/config/nav";
 import Sidebar from "@/components/Sidebar";
+import ErrorBanner from "@/components/ErrorBanner";
 import SubmitAnswerModal from "@/components/SubmitAnswerModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -74,7 +75,14 @@ export default function StudentHomeworkPage() {
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar items={STUDENT_NAV} />
 
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden pt-16 lg:pt-0">
+        {(homeworks.error || myAnswers.error) && (
+          <ErrorBanner
+            error={homeworks.error || myAnswers.error || ""}
+            onRetry={() => { homeworks.refetch(); myAnswers.refetch(); }}
+            className="m-4"
+          />
+        )}
         {/* Header */}
         <div className="shrink-0 bg-white border-b border-gray-100 px-8 py-5">
           <h1 className="text-xl font-bold text-gray-900 mb-4">Домашние задания</h1>

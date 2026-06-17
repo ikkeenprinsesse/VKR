@@ -52,7 +52,7 @@ export default function StudentChatPage() {
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar items={STUDENT_NAV} />
 
-      <main className="flex-1 flex overflow-hidden" style={{ height: "100vh" }}>
+      <main className="flex-1 flex overflow-hidden pt-16 lg:pt-0" style={{ height: "calc(100vh - 0px)" }}>
         {/* Contacts */}
         <div className="w-72 shrink-0 bg-white border-r border-gray-100 flex flex-col">
           <div className="px-4 py-4 border-b border-gray-100">

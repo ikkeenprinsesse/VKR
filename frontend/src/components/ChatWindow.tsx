@@ -87,7 +87,7 @@ function AttachmentPreviewBar({ files, onRemove }: { files: ChatFile[]; onRemove
   );
 }
 
-export default function ChatWindow({ contact }: { contact: UserOut }) {
+export default function ChatWindow({ contact, onBack }: { contact: UserOut; onBack?: () => void }) {
   const { user, token } = useAuthStore();
   const [messages,  setMessages]  = useState<Message[]>([]);
   const [loading,   setLoading]   = useState(true);
@@ -123,7 +123,6 @@ export default function ChatWindow({ contact }: { contact: UserOut }) {
 
     let ws: WebSocket;
     let reconnectTimer: ReturnType<typeof setTimeout>;
-    let pollTimer: ReturnType<typeof setInterval>;
     let destroyed = false;
 
     function connect() {
@@ -173,7 +172,7 @@ export default function ChatWindow({ contact }: { contact: UserOut }) {
     connect();
 
     // Polling fallback: обновляем историю каждые 10 сек (на случай потери WS)
-    pollTimer = setInterval(() => {
+    const pollTimer = setInterval(() => {
       if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
         getChatHistory(contact.id).then(setMessages).catch(() => {});
       }
@@ -217,7 +216,7 @@ export default function ChatWindow({ contact }: { contact: UserOut }) {
     }
   }
 
-  async function handleSend(e?: React.FormEvent) {
+  async function handleSend(e?: React.SyntheticEvent) {
     e?.preventDefault();
     if ((!text.trim() && !files.length) || sending) return;
     setSending(true);
@@ -240,7 +239,7 @@ export default function ChatWindow({ contact }: { contact: UserOut }) {
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      void handleSend();
     }
   }
 
@@ -250,7 +249,18 @@ export default function ChatWindow({ contact }: { contact: UserOut }) {
     <div className="flex flex-col h-full bg-white">
 
       {/* Header */}
-      <div className="px-5 py-3.5 border-b border-gray-100 bg-white flex items-center gap-3 shrink-0">
+      <div className="px-3 md:px-5 py-3.5 border-b border-gray-100 bg-white flex items-center gap-3 shrink-0">
+        {/* Кнопка назад — только на мобильном */}
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="md:hidden p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors shrink-0"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        )}
         <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center text-violet-700 font-bold shrink-0 text-sm">
           {contact.name[0].toUpperCase()}
         </div>

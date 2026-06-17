@@ -177,42 +177,36 @@ export default function StudentDashboard() {
           </div>
           {progress.loading ? (
             <Skeleton className="h-16 w-full" />
-          ) : progress.data ? (
-            <div className="space-y-3">
-              {/* Итоговый балл */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs text-gray-500 font-semibold">Общий прогресс</span>
-                  <span className="text-sm font-black text-violet-600">{progress.data.progress}%</span>
+          ) : progress.data && progress.data.length > 0 ? (
+            <div className="space-y-4">
+              {progress.data.map((p) => (
+                <div key={p.tutor_id} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-gray-600">{p.tutor_name}</span>
+                    <span className="text-sm font-black text-violet-600">{p.progress}%</span>
+                  </div>
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{ width: `${p.progress}%`, background: "linear-gradient(90deg, #7c3aed, #a855f7)" }}
+                    />
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 pt-0.5">
+                    <div className="text-center">
+                      <p className="text-sm font-black text-gray-900">{p.submitted_homework}/{p.total_homework}</p>
+                      <p className="text-[10px] text-gray-400 font-semibold">ДЗ сдано</p>
+                    </div>
+                    <div className="text-center border-x border-gray-100">
+                      <p className="text-sm font-black text-gray-900">{Math.round(p.avg_score_normalized * 100)}%</p>
+                      <p className="text-[10px] text-gray-400 font-semibold">Ср. оценка</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-black text-gray-900">{p.attended_lessons}/{p.total_lessons}</p>
+                      <p className="text-[10px] text-gray-400 font-semibold">Посещаемость</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{ width: `${progress.data.progress}%`, background: "linear-gradient(90deg, #7c3aed, #a855f7)" }}
-                  />
-                </div>
-              </div>
-              {/* Детали */}
-              <div className="grid grid-cols-3 gap-3 pt-1">
-                <div className="text-center">
-                  <p className="text-lg font-black text-gray-900">
-                    {progress.data.submitted_homework}/{progress.data.total_homework}
-                  </p>
-                  <p className="text-[11px] text-gray-400 font-semibold">ДЗ сдано</p>
-                </div>
-                <div className="text-center border-x border-gray-100">
-                  <p className="text-lg font-black text-gray-900">
-                    {Math.round(progress.data.avg_score_normalized * 100)}%
-                  </p>
-                  <p className="text-[11px] text-gray-400 font-semibold">Ср. оценка</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-lg font-black text-gray-900">
-                    {progress.data.attended_lessons}/{progress.data.total_lessons}
-                  </p>
-                  <p className="text-[11px] text-gray-400 font-semibold">Посещаемость</p>
-                </div>
-              </div>
+              ))}
             </div>
           ) : (
             <p className="text-sm text-gray-400 text-center py-2">
@@ -224,7 +218,7 @@ export default function StudentDashboard() {
 
       {/* Stats row */}
       <AnimatedCard delay={120}>
-        <div className="grid grid-cols-4 gap-3 mb-5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
           {stats.map((s) => (
             <div key={s.label} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
               <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center mb-2", s.bg)}>
@@ -241,7 +235,7 @@ export default function StudentDashboard() {
       </AnimatedCard>
 
       {/* Main content */}
-      <div className="grid lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
 
         {/* Homework — 2 cols */}
         <div className="lg:col-span-2 space-y-3">

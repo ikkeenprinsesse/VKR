@@ -114,7 +114,7 @@ export default function TutorSchedulePage() {
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar items={TUTOR_NAV} />
 
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden pt-16 lg:pt-0">
         {(lessons.error || students.error) && (
           <ErrorBanner
             error={lessons.error || students.error || ""}
@@ -123,7 +123,7 @@ export default function TutorSchedulePage() {
           />
         )}
         {/* Верхняя строка: навигация по датам + кнопка — всегда видна */}
-        <div className="shrink-0 bg-white border-b border-gray-100 px-6 py-3 flex items-center justify-between gap-4">
+        <div className="shrink-0 bg-white border-b border-gray-100 px-3 md:px-6 py-3 flex items-center justify-between gap-2 flex-wrap">
           <div className="flex items-center gap-2">
             <button
               onClick={() => navigate(-1)}

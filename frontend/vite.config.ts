@@ -29,6 +29,7 @@ export default defineConfig({
       "/admin":         { target: "http://127.0.0.1:8000", changeOrigin: true },
       "/slots":         { target: "http://127.0.0.1:8000", changeOrigin: true },
       "/progress":      { target: "http://127.0.0.1:8000", changeOrigin: true },
+      "/subscriptions": { target: "http://127.0.0.1:8000", changeOrigin: true },
       "/health":        { target: "http://127.0.0.1:8000", changeOrigin: true },
     },
   },

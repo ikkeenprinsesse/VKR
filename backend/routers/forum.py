@@ -112,7 +112,8 @@ async def get_posts(
         users_result = await db.execute(select(User).where(User.id.in_(user_ids)))
         users = {u.id: u for u in users_result.scalars().all()}
         for p in posts:
-            p.author_name = users.get(p.user_id, {})
+            user = users.get(p.user_id)
+            p.author_name = user.name if user else "Неизвестный"
 
     return posts
 

@@ -45,7 +45,7 @@ export default function CreateHomeworkModal({ lessons, students, onClose, onCrea
     return `${date} · ${student?.name ?? "Ученик"} · ${l.topic ?? "Занятие"}`;
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setLoading(true);

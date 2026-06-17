@@ -131,7 +131,7 @@ export default function StudentSchedulePage() {
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar items={STUDENT_NAV} />
 
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden pt-16 lg:pt-0">
         {lessons.error && (
           <ErrorBanner
             error={lessons.error}
@@ -140,7 +140,7 @@ export default function StudentSchedulePage() {
           />
         )}
         {/* Toolbar */}
-        <div className="shrink-0 bg-white border-b border-gray-100 px-6 py-3 flex items-center gap-4">
+        <div className="shrink-0 bg-white border-b border-gray-100 px-3 md:px-6 py-3 flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-2">
             <button
               onClick={() => navigate(-1)}

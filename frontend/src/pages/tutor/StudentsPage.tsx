@@ -253,49 +253,39 @@ function DetailPanel({ student, allLessons, allHomeworks, allPayments, onClose }
         <div className="flex items-center gap-2 mb-3">
           <TrendingUp className="w-4 h-4 text-violet-500" />
           <span className="text-sm font-bold text-gray-700">Прогресс ученика</span>
-          {student.subjects && (
-            <span className="ml-auto text-xs text-gray-400">{student.subjects}</span>
-          )}
         </div>
         {progress.loading ? (
           <Skeleton className="h-14 w-full" />
-        ) : progress.data ? (
+        ) : progress.data && progress.data[0] ? (
           <div className="space-y-2">
+            {(() => { const p = progress.data[0]; return (<>
             <div>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs text-gray-500">Общий балл</span>
-                <span className="text-sm font-black text-violet-600">{progress.data.progress}%</span>
+                <span className="text-sm font-black text-violet-600">{p.progress}%</span>
               </div>
               <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-700"
-                  style={{
-                    width: `${progress.data.progress}%`,
-                    background: "linear-gradient(90deg, #7c3aed, #a855f7)",
-                  }}
+                  style={{ width: `${p.progress}%`, background: "linear-gradient(90deg, #7c3aed, #a855f7)" }}
                 />
               </div>
             </div>
             <div className="grid grid-cols-3 gap-2 text-center pt-1">
               <div>
-                <p className="text-sm font-bold text-gray-900">
-                  {progress.data.submitted_homework}/{progress.data.total_homework}
-                </p>
+                <p className="text-sm font-bold text-gray-900">{p.submitted_homework}/{p.total_homework}</p>
                 <p className="text-[10px] text-gray-400">ДЗ сдано</p>
               </div>
               <div className="border-x border-gray-100">
-                <p className="text-sm font-bold text-gray-900">
-                  {Math.round(progress.data.avg_score_normalized * 100)}%
-                </p>
+                <p className="text-sm font-bold text-gray-900">{Math.round(p.avg_score_normalized * 100)}%</p>
                 <p className="text-[10px] text-gray-400">Ср. оценка</p>
               </div>
               <div>
-                <p className="text-sm font-bold text-gray-900">
-                  {progress.data.attended_lessons}/{progress.data.total_lessons}
-                </p>
+                <p className="text-sm font-bold text-gray-900">{p.attended_lessons}/{p.total_lessons}</p>
                 <p className="text-[10px] text-gray-400">Посещаемость</p>
               </div>
             </div>
+            </>); })()}
           </div>
         ) : (
           <p className="text-xs text-gray-400">Нет данных — занятия ещё не проводились</p>
@@ -466,7 +456,7 @@ export default function StudentsPage() {
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar items={TUTOR_NAV} />
 
-      <main className="flex-1 flex flex-col overflow-hidden">
+      <main className="flex-1 flex flex-col overflow-hidden pt-16 lg:pt-0">
         {(students.error || lessons.error) && (
           <ErrorBanner
             error={students.error || lessons.error || ""}
@@ -490,10 +480,10 @@ export default function StudentsPage() {
         </div>
 
         <div className="flex-1 flex overflow-hidden">
-        {/* Left: student list */}
+        {/* Left: student list — скрываем на мобильном если выбран студент */}
         <div className={cn(
           "flex flex-col bg-white border-r border-gray-100 transition-all",
-          selected ? "w-[380px] shrink-0" : "flex-1"
+          selected ? "hidden md:flex md:w-[380px] md:shrink-0" : "flex-1"
         )}>
           {/* Search */}
           <div className="px-4 py-3 border-b border-gray-100">
@@ -545,7 +535,7 @@ export default function StudentsPage() {
 
         {/* Right: detail panel */}
         {selected && (
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden flex flex-col">
             <DetailPanel
               student={selected}
               allLessons={lessons.data ?? []}

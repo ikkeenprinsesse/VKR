@@ -20,7 +20,7 @@ export default function LoginPage() {
   const [error,    setError]    = useState<string | null>(null);
   const [lottieOk, setLottieOk] = useState(true);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -96,24 +96,11 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Testimonial */}
-          <div className="mt-8 bg-white/10 backdrop-blur rounded-2xl p-5 border border-white/10">
-            <div className="flex gap-0.5 mb-2">
-              {[1,2,3,4,5].map(s => <span key={s} className="text-yellow-300 text-sm">★</span>)}
-            </div>
-            <p className="text-white text-sm leading-relaxed mb-3">
-              «Теперь я трачу время на уроки, а не на таблицы с оплатами»
-            </p>
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full bg-violet-400 border-b border-violet-500 flex items-center justify-center text-white text-xs font-black">А</div>
-              <span className="text-violet-200 text-xs font-bold">Анна · репетитор по математике</span>
-            </div>
-          </div>
         </div>
       </div>
 
       {/* ── Right panel ─────────────────────────────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-4 md:p-8">
         <div className="w-full max-w-[400px]">
 
           {/* Mobile logo */}

@@ -39,7 +39,7 @@ function CreateThreadModal({ onClose, onCreated }: { onClose: () => void; onCrea
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!title.trim()) return;
     setLoading(true);
@@ -153,7 +153,7 @@ function ThreadView({
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [posts.length]);
 
-  async function handleSend(e: React.FormEvent) {
+  async function handleSend(e: React.SyntheticEvent) {
     e.preventDefault();
     if (!text.trim()) return;
     setSending(true);

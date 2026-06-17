@@ -342,10 +342,12 @@ class PushSubscribeRequest(BaseModel):
 
 class StudentProgressOut(BaseModel):
     student_id: int
-    completion_rate: float    # C — доля выполненных заданий (0..1)
-    avg_score_normalized: float  # Q — средняя оценка / max_score (0..1)
-    attendance_rate: float    # A — доля посещённых занятий (0..1)
-    progress: float           # P = α·C + β·Q + γ·A в процентах (0..100)
+    tutor_id: int
+    tutor_name: str
+    completion_rate: float
+    avg_score_normalized: float
+    attendance_rate: float
+    progress: float
     total_homework: int
     submitted_homework: int
     graded_homework: int

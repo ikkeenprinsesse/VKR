@@ -24,7 +24,7 @@ export default function TutorSettingsModal({ onClose }: Props) {
   const [saved, setSaved]           = useState(false);
   const [error, setError]           = useState<string | null>(null);
 
-  async function handleSave(e: React.FormEvent) {
+  async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setLoading(true);

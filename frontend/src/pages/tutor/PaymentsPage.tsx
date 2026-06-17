@@ -55,7 +55,7 @@ function RecordModal({
     return `${d} · ${s?.name ?? "Ученик"} · ${l.topic ?? "Занятие"}`;
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -183,7 +183,7 @@ export default function PaymentsPage() {
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar items={TUTOR_NAV} />
 
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto pt-16 lg:pt-0">
         {(payments.error || analytics.error) && (
           <ErrorBanner
             error={payments.error || analytics.error || ""}
@@ -192,7 +192,7 @@ export default function PaymentsPage() {
           />
         )}
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between gap-3">
+        <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 md:px-8 py-4 flex items-center justify-between gap-3">
           <h1 className="text-xl font-bold text-gray-900">Финансы</h1>
           <div className="flex items-center gap-2 shrink-0">
             <button
@@ -226,9 +226,9 @@ export default function PaymentsPage() {
           </div>
         </div>
 
-        <div className="p-8 space-y-6">
+        <div className="p-4 md:p-8 space-y-6">
           {/* Summary cards */}
-          <div className="grid grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
             {[
               { label: "За этот месяц", value: `${monthIncome.toLocaleString("ru-RU")} ₽`, sub: `${thisMonth.length} оплат`, color: "text-green-600", bg: "bg-green-50", icon: TrendingUp },
               { label: "Всего получено", value: `${totalIncome.toLocaleString("ru-RU")} ₽`, sub: `${paid.length} оплаченных занятий`, color: "text-violet-600", bg: "bg-violet-50", icon: CheckCircle2 },
@@ -251,9 +251,9 @@ export default function PaymentsPage() {
           </div>
 
           {/* Chart + list */}
-          <div className="grid grid-cols-5 gap-5">
+          <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
             {/* Bar chart */}
-            <div className="col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+            <div className="xl:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
               <h3 className="font-semibold text-gray-900 mb-4">Доход по месяцам</h3>
               {analytics.loading
                 ? <Skeleton className="h-40" />
@@ -292,7 +292,7 @@ export default function PaymentsPage() {
             </div>
 
             {/* Payment list */}
-            <div className="col-span-3 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col">
+            <div className="xl:col-span-3 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col">
               {/* List header */}
               <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
                 <h3 className="font-semibold text-gray-900 flex-1">История оплат</h3>

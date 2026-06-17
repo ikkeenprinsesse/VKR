@@ -35,7 +35,7 @@ export default function RegisterPage() {
   const [searchParams] = useSearchParams();
   const inviteCode = searchParams.get("invite") ?? "";
 
-  const { setToken, setUser } = useAuthStore();
+  const { setTokens, setUser } = useAuthStore();
 
   const [role,     setRole]     = useState<Role>("tutor");
   const [name,     setName]     = useState("");
@@ -46,7 +46,7 @@ export default function RegisterPage() {
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -56,7 +56,7 @@ export default function RegisterPage() {
         invite_code: role === "student" ? invite || undefined : undefined,
       });
       const tokenData = await login({ username: email, password });
-      setToken(tokenData.access_token);
+      setTokens(tokenData.access_token, tokenData.refresh_token);
       const me = await getMe();
       setUser(me);
       navigate(me.role === "tutor" ? "/dashboard/tutor" : "/dashboard/student");
@@ -115,7 +115,7 @@ export default function RegisterPage() {
       </div>
 
       {/* ── Right form panel ────────────────────────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-4 md:p-8">
         <div className="w-full max-w-sm">
 
           {/* Mobile logo */}

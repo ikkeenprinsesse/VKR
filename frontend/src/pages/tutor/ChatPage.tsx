@@ -7,6 +7,7 @@ import { getMyStudents } from "@/api/users";
 import { getUnreadCounts } from "@/api/chat";
 import type { UserOut } from "@/api/auth";
 import Sidebar from "@/components/Sidebar";
+import ErrorBanner from "@/components/ErrorBanner";
 import ChatWindow from "@/components/ChatWindow";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -41,9 +42,15 @@ export default function TutorChatPage() {
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar items={TUTOR_NAV} />
 
-      <main className="flex-1 flex overflow-hidden" style={{ height: "100vh" }}>
-        {/* Contacts */}
-        <div className="w-72 shrink-0 bg-white border-r border-gray-100 flex flex-col">
+      <main className="flex-1 flex overflow-hidden pt-16 lg:pt-0" style={{ height: "calc(100vh - 0px)" }}>
+        {students.error && (
+          <ErrorBanner error={students.error} onRetry={students.refetch} className="absolute top-4 left-72 right-4 z-10" />
+        )}
+        {/* Contacts — скрываем на мобильном если открыт чат */}
+        <div className={cn(
+          "shrink-0 bg-white border-r border-gray-100 flex flex-col",
+          selected ? "hidden md:flex md:w-72" : "w-full md:w-72"
+        )}>
           <div className="px-4 py-4 border-b border-gray-100">
             <h1 className="text-base font-bold text-gray-900 mb-3">Сообщения</h1>
             <div className="relative">
@@ -116,10 +123,10 @@ export default function TutorChatPage() {
           </div>
         </div>
 
-        {/* Chat area */}
-        <div className="flex-1 overflow-hidden">
+        {/* Chat area — скрываем пустой экран на мобильном */}
+        <div className={cn("flex-1 overflow-hidden", !selected && "hidden md:flex")}>
           {selected ? (
-            <ChatWindow key={selected.id} contact={selected} />
+            <ChatWindow key={selected.id} contact={selected} onBack={() => setSelected(null)} />
           ) : (
             <div className="flex flex-col items-center justify-center h-full bg-gray-50">
               <div className="w-16 h-16 rounded-full bg-violet-50 flex items-center justify-center mb-3">

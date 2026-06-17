@@ -24,7 +24,7 @@ export default function SubmitAnswerModal({ hw, existingAnswer, onClose, onSubmi
   const alreadyGraded = existingAnswer?.status === "graded";
   const hoursLeft    = Math.max(0, Math.ceil((deadline.getTime() - Date.now()) / 3600000));
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!content.trim() && !files.length) {
       setError("Добавьте текстовый ответ или прикрепите файл");

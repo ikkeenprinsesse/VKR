@@ -11,6 +11,7 @@ import { getPaymentAnalytics } from "@/api/payments";
 import { getMyStudents, createInvitation } from "@/api/users";
 import DashboardLayout from "@/components/DashboardLayout";
 import CreateLessonModal from "@/components/CreateLessonModal";
+import ErrorBanner from "@/components/ErrorBanner";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -93,8 +94,18 @@ export default function TutorDashboard() {
     { label: "Доход за месяц",  value: analytics.loading ? null : `${monthIncome.toLocaleString("ru-RU")} ₽`, icon: BarChart3, color: "text-emerald-600", bg: "bg-emerald-50" },
   ];
 
+  const pageError = lessons.error || homeworks.error || analytics.error || students.error;
+
   return (
     <DashboardLayout items={TUTOR_NAV}>
+
+      {pageError && (
+        <ErrorBanner
+          error={pageError}
+          onRetry={() => { lessons.refetch(); homeworks.refetch(); analytics.refetch(); students.refetch(); }}
+          className="mb-4"
+        />
+      )}
 
       {/* Header */}
       <AnimatedCard>
